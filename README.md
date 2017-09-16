@@ -9,4 +9,4 @@ This project makes possible to draw geocharts in custom and high resolution maps
 
 The above printscreen shows a Geochart GeoJSON in the Rio de Janeiro state, in Brazil.
 
-![Geochart GeoJSON of Rio de Janeiro state, Brazil](rio-state-chart.png)
+![Geochart GeoJSON of Rio de Janeiro state, Brazil](readme_img/rio-state-chart-small.png)
