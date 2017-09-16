@@ -10,3 +10,15 @@ This project makes possible to draw geocharts in custom and high resolution maps
 The above printscreen shows a Geochart GeoJSON in the Rio de Janeiro state, in Brazil.
 
 ![Geochart GeoJSON of Rio de Janeiro state, Brazil](readme_img/rio-state-chart-small.png)
+
+Requirements
+------------
+
+To use this project you need to load the [Google Charts](https://developers.google.com/chart/interactive/docs/) and the [Google Maps API](https://developers.google.com/maps/documentation/javascript/tutorial) before.
+
+Notes
+-----
+
+This project implements the Google Chart API and tries to implement an interface similar to the Google Charts geochart component.
+
+However, only a very few features are implemented.

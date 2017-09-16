@@ -1,0 +1,59 @@
+<!--
+vim: set ts=2 sw=2 et :
+-->
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Geochart GeoJSON example page</title>
+
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <!--
+      Note: you will need to get a MAPS_API_KEY for your project.
+      See: https://developers.google.com/chart/interactive/docs/basic_load_libs#load-settings
+    -->
+    <!--<script src="https://maps.googleapis.com/maps/api/js?key=MAPS_API_KEY">-->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBo-vojIWIptJt5icTBZ77vez84aZzz3ys"></script>
+    <script type="text/javascript" src="../js/geochart-geojson.js"></script>
+    
+    <script type="text/javascript">
+      google.charts.load("current");
+      google.charts.setOnLoadCallback(drawVisualization);
+
+      function drawVisualization() {
+
+        // Create and populate a data table
+        var data = new google.visualization.DataTable();
+        data.addColumn('string', 'State');
+        data.addColumn('number', 'Value');
+        data.addRows([
+          ['Rio de Janeiro', 10],
+          ['Maricá', 5],
+          ['São João de Meriti', 2],
+          ['Niterói', 1],
+          ['São Gonçalo', 1]
+        ]);
+
+        // Instantiate our Geochart GeoJSON object
+        var vis = new geochart_geojson.GeoChart(document.getElementById('mydiv'));
+
+        // Set Geochart GeoJSON options
+        var options = {
+          mapsOptions: {
+            center: {lat: -22.29, lng: -43.2},
+            zoom: 8
+          },
+          geoJson: "rio-state.geo.json",
+          geoJsonOptions: {
+            idPropertyName: "name"
+          }
+        };
+
+        // Draw our Geochart GeoJSON with the data we created locally
+        vis.draw(data, options);
+      }
+    </script>
+  </head>
+  <body>
+    <div id="mydiv" style="width: 1024; height: 600;"></div>
+  </body>
+</html>
