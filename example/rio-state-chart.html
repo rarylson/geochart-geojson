@@ -23,23 +23,23 @@ vim: set ts=2 sw=2 et :
 
         // Create and populate a data table
         var data = new google.visualization.DataTable();
-        data.addColumn('string', 'State');
-        data.addColumn('number', 'Value');
+        data.addColumn("string", "State");
+        data.addColumn("number", "Value");
         data.addRows([
-          ['Rio de Janeiro', 10],
-          ['Maricá', 5],
-          ['São João de Meriti', 2],
-          ['Niterói', 1],
-          ['São Gonçalo', 1]
+          ["Rio de Janeiro", 10],
+          ["Maricá", 5],
+          ["São João de Meriti", 2],
+          ["Niterói", 1],
+          ["São Gonçalo", 1]
         ]);
 
         // Instantiate our Geochart GeoJSON object
-        var vis = new geochart_geojson.GeoChart(document.getElementById('mydiv'));
+        var vis = new geochart_geojson.GeoChart(document.getElementById("mydiv"));
 
         // Set Geochart GeoJSON options
         var options = {
           mapsOptions: {
-            center: {lat: -22.29, lng: -43.2},
+            center: {lat: -22.15, lng: -42.9},
             zoom: 8
           },
           geoJson: "rio-state.geo.json",
@@ -54,6 +54,6 @@ vim: set ts=2 sw=2 et :
     </script>
   </head>
   <body>
-    <div id="mydiv" style="width: 1024; height: 600;"></div>
+    <div id="mydiv" style="width: 900; height: 560;"></div>
   </body>
 </html>

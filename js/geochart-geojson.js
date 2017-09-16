@@ -6,6 +6,8 @@
  */
 var geochart_geojson = {};
 
+(function(context) { 
+
 /**
  * Create a GeoChart with GeoJSON support
  * @class
@@ -22,10 +24,11 @@ var geochart_geojson = {};
  * 
  * @param {object} container - The HTML container for the chart.
  */
-geochart_geojson.GeoChart = function(container) {
+context.GeoChart = function(container) {
   this.container = container;
 
-  this.data_table_ = null;
+  this.data_ = null;
+  this.options_ = null;
   // The inner Google Maps map object
   // This object will hold the GeoJSON map (in its overlay layer), the tooltip overlay and the
   // legend control.
@@ -42,10 +45,52 @@ geochart_geojson.GeoChart = function(container) {
   this.selection_ = null;
 }
 
-geochart_geojson.GeoChart.prototype.DEFAULT_OPTIONS = {
-  //maps_background: "none",
+context.GeoChart.prototype.DEFAULT_OPTIONS = {
+  maps_background: "none",
+  maps_control: false
 }
 
-geochart_geojson.GeoChart.prototype.draw = function(data, options) {
-  //
+// TODO Implement other `maps_background` and `maps_control` options
+context.GeoChart.prototype.getMapsOptions_ = function() {
+  var maps_options = this.options_.mapsOptions;
+
+  if (this.options_.maps_background === "none") {
+    maps_options["styles"] = [{
+      "stylers": [{"visibility": "off"}]
+    }];
+    maps_options["backgroundColor"] = "none";
+  } else {
+    throw "Invalid `maps_background` option";
+  }
+
+  if (this.options_.maps_control === false) {
+    maps_options["disableDefaultUI"] = true;
+    maps_options["scrollwheel"] = false;
+    maps_options["draggable"] = false;
+    maps_options["disableDoubleClickZoom"] = true;
+  } else {
+    throw "Invalid `maps_control` option";
+  }
+
+  return maps_options;
 }
+
+context.GeoChart.prototype.draw = function(data, options) {
+  this.data_ = data;
+  // XXX This doesn't run a deep copy. So, if someday `DEFAULT_OPTIONS` has objects in its values,
+  // the line above won't work anymore.
+  // See: https://stackoverflow.com/questions/27936772/how-to-deep-merge-instead-of-shallow-merge
+  var merged_options = Object.assign({}, context.GeoChart.prototype.DEFAULT_OPTIONS, options);
+  this.options_ = merged_options;
+
+  var maps_options = this.getMapsOptions_();
+
+  // TODO We could implement custom zooming when maps_background = 'none' using custom
+  // projections.
+  // See: https://groups.google.com/forum/#!topic/google-maps-js-api-v3/AbOHZlLQLCg
+
+  this.map_ = new google.maps.Map(this.container, maps_options);
+  this.map_.data.loadGeoJson(this.options_.geoJson, this.options_.geoJsonOptions);
+}
+
+})(geochart_geojson);
