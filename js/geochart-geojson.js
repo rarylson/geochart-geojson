@@ -17,7 +17,11 @@ context.CONSTANTS = {
   // zIndex of the tooltip
   // The tooltip must have a zIndex higher than the features and the selected and highlighted
   // features. 
-  tooltipZIndex: 2000
+  tooltipZIndex: 2000,
+  // Color axis constants
+  ColorAxisIndicatorSize: "12px",
+  colorAxisIndicatorLeftOffset: -6,
+  colorAxisIndicatorTopOffset: -8
 }
 
 /**
@@ -45,12 +49,12 @@ context.GeoChart = function(container) {
   this.options_ = null;
   // The inner Google Maps map object
   // This object will hold the GeoJSON map (in its overlay layer), the tooltip overlay and the
-  // legend control.
+  // color axis.
   // Optionally, it will also handle the underlying map layer (map, satellite or simple map) and
   // the map control (zoom, map drag). These features are disabled by default, so the 
   this.maps_map_ = null;
   this.tooltip_ = null;
-  this.legend_ = null;
+  this.color_axis_ = null;
   // Min and max values of the DataTable rows
   // Used in the gradient color generation.
   this.min_ = 0;
@@ -88,7 +92,16 @@ context.GeoChart.prototype.DEFAULT_OPTIONS = {
       margin: "2px"
     }
   },
-  tooltipOffset: 12
+  tooltipOffset: 12,
+  colorAxis: {
+    width: "250px",
+    height: "13px",
+    textStyle: {
+      color: "#000000",
+      fontFamily: "Arial",
+      fontSize: "14px"
+    }
+  }
 }
 
 // TODO Implement other `mapsBackground` and `mapsControl` options
@@ -159,6 +172,11 @@ context.GeoChart.prototype.draw = function(data, options={}) {
         this_.min_ = min;
         this_.max_ = max;
        
+        // Create the color axis
+        this_.color_axis_ = new context.ColorAxis(this_);
+        this_.map_.controls[google.maps.ControlPosition.LEFT_BOTTOM].push(
+            this_.color_axis_.getContainer());
+
         // Create the tooltip
         google.maps.event.addListener(this_.map_, "tooltip-ready", function() {
           
@@ -175,7 +193,7 @@ context.GeoChart.prototype.draw = function(data, options={}) {
     // Default style
     var style = Object.assign(
         {}, {cursor: "default"},
-        this_.DEFAULT_OPTIONS.featuresStyle);
+        this_.options_.featuresStyle);
     
     // Feature with data style
     // Colorize the features with data (using the gradient colors)
@@ -184,12 +202,12 @@ context.GeoChart.prototype.draw = function(data, options={}) {
       var stroke_color_arr = [];
 
       var gradient_colors_arr = [
-          this_.getColorArray_(this_.DEFAULT_OPTIONS.featuresGradientColors[0]),
-          this_.getColorArray_(this_.DEFAULT_OPTIONS.featuresGradientColors[1])
+          this_.getColorArray_(this_.options_.featuresGradientColors[0]),
+          this_.getColorArray_(this_.options_.featuresGradientColors[1])
       ];
       var gradient_stroke_colors_arr = [
-          this_.getColorArray_(this_.DEFAULT_OPTIONS.featuresGradientStrokeColors[0]),
-          this_.getColorArray_(this_.DEFAULT_OPTIONS.featuresGradientStrokeColors[1])
+          this_.getColorArray_(this_.options_.featuresGradientStrokeColors[0]),
+          this_.getColorArray_(this_.options_.featuresGradientStrokeColors[1])
       ];
       var relative_value = this_.getRelativeValue_(feature.getProperty("data-value"));
 
@@ -203,16 +221,14 @@ context.GeoChart.prototype.draw = function(data, options={}) {
       }
 
       style = Object.assign(style, {
-        fillColor: "rgb(" + fill_color_arr[0] + ", " + fill_color_arr[1] + ", " +
-            fill_color_arr[2] + ")",
-        strokeColor: "rgb(" + stroke_color_arr[0] + ", " + stroke_color_arr[1] + ", " +
-            stroke_color_arr[2] + ")"
+        fillColor: this_.getColorArrayStr_(fill_color_arr),
+        strokeColor: this_.getColorArrayStr_(stroke_color_arr)
       });
 
       // Selected feature style
       if (feature.getProperty("data-selected") === true) {
         style = Object.assign(
-            style, this_.DEFAULT_OPTIONS.featuresHighlightedStyle,
+            style, this_.options_.featuresHighlightedStyle,
             {zIndex: context.CONSTANTS.selectedZIndex}
         );
       }
@@ -225,7 +241,7 @@ context.GeoChart.prototype.draw = function(data, options={}) {
 
   this.map_.data.addListener("mouseover", function(event) {
     var highlighted_style = Object.assign(
-        {}, this_.DEFAULT_OPTIONS.featuresHighlightedStyle,
+        {}, this_.options_.featuresHighlightedStyle,
         {zIndex: context.CONSTANTS.highlightedZIndex});
 
     if (event.feature !== this_.feature_selected_) {    
@@ -282,6 +298,10 @@ context.GeoChart.prototype.getColorArray_ = function(color) {
   color_array = [parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16)];
 
   return color_array;
+}
+
+context.GeoChart.prototype.getColorArrayStr_ = function(color_array) {
+  return "rgb(" + color_array[0] + ", " + color_array[1] + ", " + color_array[2] + ")";
 }
 
 context.GeoChart.prototype.getRelativeValue_ = function(value) {
@@ -428,6 +448,109 @@ context.Tooltip.prototype.drawTooltip = function(feature, latLng) {
 
 context.Tooltip.prototype.undrawTooltip = function() {
   this.div_.style.visibility = "hidden";
+}
+
+/**
+ * Color axis for GeoChart GeoJSON
+ * @class
+ *
+ * It's a control to be placed on a Google Maps map.
+ * 
+ * @param {object} geoChart - The GeoChart GeoJSON object where the color axis will be placed.
+ */
+context.ColorAxis = function(geoChart) {
+  this.geo_chart_ = geoChart;
+
+  this.div_ = null;
+  this.indicator_span_ = null;
+
+  this.draw_();
+}
+
+context.ColorAxis.prototype.draw_ = function() {
+  var div = document.createElement('div');
+
+  var div_inner = document.createElement('div');
+  Object.assign(div_inner.style, this.geo_chart_.options_.colorAxis.textStyle);
+
+  var min_div =  document.createElement('div');
+  min_div.style.padding = "4px";
+  min_div.style.display = "table-cell";
+  min_div.innerText = this.geo_chart_.min_;
+  div_inner.appendChild(min_div);
+
+  var axis_div = document.createElement('div');
+  axis_div.style.display = "table-cell";
+  axis_div.style.verticalAlign = "middle";
+  axis_div.style.position = "relative";
+  axis_div.style.padding = "0";
+  axis_div.style.margin = "0";
+  var axis_div_inner = document.createElement('div');
+  axis_div_inner.style.width = this.geo_chart_.options_.colorAxis.width;
+  axis_div_inner.style.height = this.geo_chart_.options_.colorAxis.height;
+  axis_div_inner.style.padding = "0";
+  axis_div_inner.style.margin = "0";
+  axis_div_inner.style.background = this.getGradientString_();
+  axis_div.appendChild(axis_div_inner);
+  var indicator_span = document.createElement('span');
+  indicator_span.style.fontSize = context.CONSTANTS.ColorAxisIndicatorSize;
+  indicator_span.style.top = context.CONSTANTS.ColorAxisIndicatortopOffset;
+  indicator_span.style.position = "absolute";
+  indicator_span.style.visibility = "hidden";
+  indicator_span.innerText = "▼";
+  axis_div.appendChild(indicator_span);
+  div_inner.appendChild(axis_div);
+
+  var max_div =  document.createElement('div');
+  max_div.style.padding = "4px";
+  max_div.style.display = "table-cell";
+  max_div.innerText = this.geo_chart_.max_;
+  div_inner.appendChild(max_div);
+
+  div.appendChild(div_inner);
+  this.div_ = div;
+  this.indicator_span_ = indicator_span;
+}
+
+context.ColorAxis.prototype.getGradientString_ = function() {
+  var gradient_string = "";
+  
+  var gradient_colors_arr = [
+      this.geo_chart_.getColorArray_(this.geo_chart_.options_.featuresGradientColors[0]),
+      this.geo_chart_.getColorArray_(this.geo_chart_.options_.featuresGradientColors[1])
+  ];
+  var gradient_colors_str = [
+    this.geo_chart_.getColorArrayStr_(gradient_colors_arr[0]),
+    this.geo_chart_.getColorArrayStr_(gradient_colors_arr[1])
+  ];
+
+  gradient_string +=
+      "-moz-linear-gradient(left, " + gradient_colors_str[0] + ", " +
+      gradient_colors_str[1] + ")";
+  //gradient_string +=
+  //    "-webkit-linear-gradient(left, " + gradient_colors_str[0] + ", " +
+  //    gradient_colors_str[1] + ")";
+  //gradient_string +=
+  //    "linear-gradient(to right, " + gradient_colors_str[0] + ", " +
+  //    gradient_colors_str[1] + ")";
+
+  return gradient_string;
+}
+
+context.ColorAxis.prototype.getContainer = function() {
+  return this.div_;
+}
+
+context.ColorAxis.prototype.drawIndicator = function(feature) {
+  var relative_value = this_.geo_chart_.getRelativeValue_(feature.getProperty("data-value"));
+  var width = this.geo_chart_.options_.colorAxis.width;
+  this.indicator_span_.style.left =
+      (relative_value * width + context.CONSTANTS.ColorAxisIndicatorLeftOffset) + "px";
+	this.ruler_span_.style.visibility = "visible";
+}
+
+context.ColorAxis.prototype.undrawIndicator = function() {
+	this.ruler_span_.style.visibility = "hidden";
 }
 
 })(geochart_geojson);
