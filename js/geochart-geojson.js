@@ -44,7 +44,7 @@ context.GeoChart = function(container) {
   this.min_ = 0;
   this.max_ = 0;
   // Feature selected by the user
-  this.featureSelected_ = null;
+  this.feature_selected_ = null;
 }
 
 context.GeoChart.prototype.CONSTANTS = {
@@ -115,7 +115,7 @@ context.GeoChart.prototype.draw = function(data, options) {
   // See: https://groups.google.com/forum/#!topic/google-maps-js-api-v3/AbOHZlLQLCg
   this.map_ = new google.maps.Map(this.container, maps_options);
 
-  // Load the GeoJSON data 
+  // Load the GeoJSON data
   this.map_.data.loadGeoJson(
       this.options_.geoJson, this.options_.geoJsonOptions,
       function(features) {
@@ -140,13 +140,19 @@ context.GeoChart.prototype.draw = function(data, options) {
         }
         this_.min_ = min;
         this_.max_ = max;
+       
+        // Trigger the ready event
+        // See: https://developers.google.com/chart/interactive/docs/dev/events#the-ready-event
+        google.visualization.events.trigger(this_, 'ready', null);
       }
   );
 
   // Define the feature styles
   this.map_.data.setStyle(function(feature) {
+    // Default style
     var style = Object.assign({}, this_.DEFAULT_OPTIONS.featuresStyle);
     
+    // Feature with data style
     // Colorize the features with data (using the gradient colors)
     if (feature.getProperty("data-value") !== undefined) {
       var fill_color_arr = [];
@@ -177,6 +183,14 @@ context.GeoChart.prototype.draw = function(data, options) {
         strokeColor: 'rgb(' + stroke_color_arr[0] + ',' + stroke_color_arr[1] + ',' +
             stroke_color_arr[2] + ')'
       });
+
+      // Selected feature style
+      if (feature.getProperty("data-selected") === true) {
+        style = Object.assign(
+            style, this_.DEFAULT_OPTIONS.featuresHighlightedStyle,
+            {zIndex: this_.CONSTANTS.selectedZIndex}
+        );
+      }
     }
 
     return style;
@@ -210,18 +224,19 @@ context.GeoChart.prototype.getRelativeValue_ = function(value) {
 // Entry selected by the user
 // See: https://developers.google.com/chart/interactive/docs/reference#getselection
 context.GeoChart.prototype.getSelection = function() {
-  if (! this.featureSelected_) {
+  if (! this.feature_selected_) {
     return [];
   } else {
-    return [{row: this.featureSelected_.getProperty("data-row"), column: null}];
+    return [{row: this.feature_selected_.getProperty("data-row"), column: null}];
   }
 }
 
 context.GeoChart.prototype.setSelection = function(selection) {
   // Implemented only for a single row selection
-  if (Array.isArray(selection) && selection.row && selection.length === 1) {
-    var id = this.data_.getValue(selection[0].row, 0);
-    this.featureSelected_ = this.map_.data.getFeatureById(id);
+  if (Array.isArray(selection) && selection.length === 1) {
+      var id = this.data_.getValue(selection[0].row, 0);
+      this.feature_selected_ = this.map_.data.getFeatureById(id);
+      this.feature_selected_.setProperty("data-selected", true);
   }
 }
 

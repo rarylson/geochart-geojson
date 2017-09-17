@@ -49,6 +49,10 @@ vim: set ts=2 sw=2 et :
         };
 
         // Draw our Geochart GeoJSON with the data we created locally
+        // And set a selection also.
+        google.visualization.events.addListener(vis, "ready", function() {
+          vis.setSelection([{row: 0, column: null}]);
+        });
         vis.draw(data, options);
       }
     </script>
