@@ -196,6 +196,23 @@ context.GeoChart.prototype.draw = function(data, options) {
     return style;
   });
 
+  this.map_.data.addListener('mouseover', function(event) {
+    var highlight_style = Object.assign(
+        {}, this_.DEFAULT_OPTIONS.featuresHighlightedStyle,
+        {zIndex: this_.CONSTANTS.highlightedZIndex});
+
+    if (event.feature !== this_.feature_selected_) {    
+        this_.map_.data.revertStyle();
+        this_.map_.data.overrideStyle(event.feature, highlight_style);
+    }
+  });
+
+  this.map_.data.addListener('mouseout', function(event) {
+    if (event.feature !== this_.feature_selected_) {    
+        this_.map_.data.revertStyle();
+    }
+  });
+
 }
 
 // Based on: https://stackoverflow.com/questions/5623838/rgb-to-hex-and-hex-to-rgb
@@ -232,12 +249,20 @@ context.GeoChart.prototype.getSelection = function() {
 }
 
 context.GeoChart.prototype.setSelection = function(selection) {
+  var id = "";
+  var feature = null;
+
   // Implemented only for a single row selection
   if (Array.isArray(selection) && selection.length === 1) {
-      var id = this.data_.getValue(selection[0].row, 0);
-      this.feature_selected_ = this.map_.data.getFeatureById(id);
-      this.feature_selected_.setProperty("data-selected", true);
+      id = this.data_.getValue(selection[0].row, 0);
+      feature = this.map_.data.getFeatureById(id);
+      this.selectFeature_(feature);
   }
+}
+
+context.GeoChart.prototype.selectFeature_ = function(feature) {
+  this.feature_selected_ = feature;
+  this.feature_selected_.setProperty("data-selected", true);
 }
 
 })(geochart_geojson);
