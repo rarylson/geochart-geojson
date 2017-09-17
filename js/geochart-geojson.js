@@ -19,8 +19,10 @@ var geochart_geojson = {};
  * See:
  * 
  * - https://developers.google.com/chart/interactive/docs/dev/
- * - https://developers.google.com/maps/documentation/javascript/
  * - https://developers.google.com/chart/interactive/docs/gallery/geochart
+ * - https://developers.google.com/chart/interactive/docs/datatables_dataviews
+ * - https://developers.google.com/chart/interactive/docs/reference
+ * - https://developers.google.com/maps/documentation/javascript/
  * 
  * @param {object} container - The HTML container for the chart.
  */
@@ -41,8 +43,8 @@ context.GeoChart = function(container) {
   // Used in the gradient color generation.
   this.min_ = 0;
   this.max_ = 0;
-  // DataTable row selected by the user
-  this.selection_ = null;
+  // Feature selected by the user
+  this.featureSelected_ = null;
 }
 
 context.GeoChart.prototype.CONSTANTS = {
@@ -104,6 +106,8 @@ context.GeoChart.prototype.draw = function(data, options) {
   var merged_options = Object.assign({}, context.GeoChart.prototype.DEFAULT_OPTIONS, options);
   this.options_ = merged_options;
 
+  var this_ = this;
+
   // Create the Google Maps object
   var maps_options = this.getMapsOptions_();
   // TODO We could implement custom zooming when mapsBackground = 'none' using custom
@@ -112,16 +116,17 @@ context.GeoChart.prototype.draw = function(data, options) {
   this.map_ = new google.maps.Map(this.container, maps_options);
 
   // Load the GeoJSON data 
-  var map = this.map_;
   this.map_.data.loadGeoJson(
       this.options_.geoJson, this.options_.geoJsonOptions,
       function(features) {
         var min = Number.MAX_VALUE;
         var max = -Number.MAX_VALUE;
 
+        // Populate the feature "data-" properties
         for (var row = 0; row < data.getNumberOfRows(); row++) {
           var id = data.getValue(row, 0);
           var value = data.getValue(row, 1);
+          var feature = this_.map_.data.getFeatureById(id);          
 
           // Keep track of min and max values
           if (value < min) {
@@ -130,15 +135,94 @@ context.GeoChart.prototype.draw = function(data, options) {
           if (value > max) {
             max = value;
           }
-
-          // Set feature property "value" based on the data table values
-          map.data.getFeatureById(id).setProperty("value", value);
+          feature.setProperty("data-row", row);
+          feature.setProperty("data-value", value);
         }
-
-        this.min_ = min;
-        this.max_ = max;
+        this_.min_ = min;
+        this_.max_ = max;
       }
-  );      
+  );
+
+  // Define the feature styles
+  this.map_.data.setStyle(function(feature) {
+    var style = Object.assign({}, this_.DEFAULT_OPTIONS.featuresStyle);
+    
+    // Colorize the features with data (using the gradient colors)
+    if (feature.getProperty("data-value") !== undefined) {
+      var fill_color_arr = [];
+      var stroke_color_arr = [];
+
+      var gradient_colors_arr = [
+          this_.getColorArray_(this_.DEFAULT_OPTIONS.featuresGradientColors[0]),
+          this_.getColorArray_(this_.DEFAULT_OPTIONS.featuresGradientColors[1])
+      ];
+      var gradient_stroke_colors_arr = [
+          this_.getColorArray_(this_.DEFAULT_OPTIONS.featuresGradientStrokeColors[0]),
+          this_.getColorArray_(this_.DEFAULT_OPTIONS.featuresGradientStrokeColors[1])
+      ];
+      var relative_value = this_.getRelativeValue_(feature.getProperty("data-value"));
+
+      for (var i = 0; i < 3; i++) {
+        fill_color_arr[i] = 
+            (gradient_colors_arr[1][i] - gradient_colors_arr[0][i]) * relative_value +
+            gradient_colors_arr[0][i];
+        stroke_color_arr[i] = 
+            ((gradient_stroke_colors_arr[1][i] - gradient_stroke_colors_arr[0][i]) *
+            relative_value) + gradient_stroke_colors_arr[0][i];
+      }
+
+      style = Object.assign(style, {
+        fillColor: 'rgb(' + fill_color_arr[0] + ',' + fill_color_arr[1] + ',' +
+            fill_color_arr[2] + ')',
+        strokeColor: 'rgb(' + stroke_color_arr[0] + ',' + stroke_color_arr[1] + ',' +
+            stroke_color_arr[2] + ')'
+      });
+    }
+
+    return style;
+  });
+
+}
+
+// Based on: https://stackoverflow.com/questions/5623838/rgb-to-hex-and-hex-to-rgb
+context.GeoChart.prototype.getColorArray_ = function(color) {
+  var short_regex = /^#?([\da-f])([\da-f])([\da-f])$/i;
+  var regex = /^#?([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i;
+
+  var color_array = null;
+
+  color = color.replace(short_regex, function(m, r, g, b) {
+    return "#" + r + r + g + g + b + b;
+  });
+  var result = regex.exec(color);
+  if (! result) {
+    throw "Invalid color string";
+  }
+  color_array = [parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16)];
+
+  return color_array;
+}
+
+context.GeoChart.prototype.getRelativeValue_ = function(value) {
+  return (value - this.min_) / (this.max_ - this.min_);
+}
+
+// Entry selected by the user
+// See: https://developers.google.com/chart/interactive/docs/reference#getselection
+context.GeoChart.prototype.getSelection = function() {
+  if (! this.featureSelected_) {
+    return [];
+  } else {
+    return [{row: this.featureSelected_.getProperty("data-row"), column: null}];
+  }
+}
+
+context.GeoChart.prototype.setSelection = function(selection) {
+  // Implemented only for a single row selection
+  if (Array.isArray(selection) && selection.row && selection.length === 1) {
+    var id = this.data_.getValue(selection[0].row, 0);
+    this.featureSelected_ = this.map_.data.getFeatureById(id);
+  }
 }
 
 })(geochart_geojson);
