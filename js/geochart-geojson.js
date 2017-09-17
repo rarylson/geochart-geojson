@@ -45,31 +45,52 @@ context.GeoChart = function(container) {
   this.selection_ = null;
 }
 
-context.GeoChart.prototype.DEFAULT_OPTIONS = {
-  maps_background: "none",
-  maps_control: false
+context.GeoChart.prototype.CONSTANTS = {
+  // zIndex of selected or highlighted features
+  // The selected (click) and highlighted (hover) features must have a zIndex higher than
+  // the other features.
+  selectedZIndex: 999,
+  highlightedZIndex: 1000
 }
 
-// TODO Implement other `maps_background` and `maps_control` options
+context.GeoChart.prototype.DEFAULT_OPTIONS = {
+  mapsBackground: "none",
+  mapsControl: false,
+  featuresStyle: {
+    fillColor: "#f5f5f5",
+    strokeColor: '#dddddd',
+    fillOpacity: 1,
+    strokeWeight: 1,
+    cursor: "default"
+  },
+  featuresHighlightedStyle: {
+    strokeWeight: 3,
+    strokeOpacity: 1,
+  },
+  featuresGradientColors: ["#efe6dc", "#109618"],
+  featuresGradientStrokeColors: ["#d7cfc6", "0e8716"]
+}
+
+// TODO Implement other `mapsBackground` and `mapsControl` options
 context.GeoChart.prototype.getMapsOptions_ = function() {
   var maps_options = this.options_.mapsOptions;
 
-  if (this.options_.maps_background === "none") {
+  if (this.options_.mapsBackground === "none") {
     maps_options["styles"] = [{
       "stylers": [{"visibility": "off"}]
     }];
     maps_options["backgroundColor"] = "none";
   } else {
-    throw "Invalid `maps_background` option";
+    throw "Invalid `mapsBackground` option";
   }
 
-  if (this.options_.maps_control === false) {
+  if (this.options_.mapsControl === false) {
     maps_options["disableDefaultUI"] = true;
     maps_options["scrollwheel"] = false;
     maps_options["draggable"] = false;
     maps_options["disableDoubleClickZoom"] = true;
   } else {
-    throw "Invalid `maps_control` option";
+    throw "Invalid `mapsControl` option";
   }
 
   return maps_options;
@@ -83,14 +104,41 @@ context.GeoChart.prototype.draw = function(data, options) {
   var merged_options = Object.assign({}, context.GeoChart.prototype.DEFAULT_OPTIONS, options);
   this.options_ = merged_options;
 
+  // Create the Google Maps object
   var maps_options = this.getMapsOptions_();
-
-  // TODO We could implement custom zooming when maps_background = 'none' using custom
+  // TODO We could implement custom zooming when mapsBackground = 'none' using custom
   // projections.
   // See: https://groups.google.com/forum/#!topic/google-maps-js-api-v3/AbOHZlLQLCg
-
   this.map_ = new google.maps.Map(this.container, maps_options);
-  this.map_.data.loadGeoJson(this.options_.geoJson, this.options_.geoJsonOptions);
+
+  // Load the GeoJSON data 
+  var map = this.map_;
+  this.map_.data.loadGeoJson(
+      this.options_.geoJson, this.options_.geoJsonOptions,
+      function(features) {
+        var min = Number.MAX_VALUE;
+        var max = -Number.MAX_VALUE;
+
+        for (var row = 0; row < data.getNumberOfRows(); row++) {
+          var id = data.getValue(row, 0);
+          var value = data.getValue(row, 1);
+
+          // Keep track of min and max values
+          if (value < min) {
+            min = value;
+          }
+          if (value > max) {
+            max = value;
+          }
+
+          // Set feature property "value" based on the data table values
+          map.data.getFeatureById(id).setProperty("value", value);
+        }
+
+        this.min_ = min;
+        this.max_ = max;
+      }
+  );      
 }
 
 })(geochart_geojson);
