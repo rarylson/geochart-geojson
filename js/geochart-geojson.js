@@ -232,14 +232,18 @@ context.GeoChart.prototype.draw = function(data, options={}) {
         this_.map_.data.revertStyle();
         this_.map_.data.overrideStyle(event.feature, highlighted_style);
     }
-    if (event.feature.getProperty("data-value") !== undefined) {
-      this_.tooltip_.drawTooltip(event.feature, event.latLng);
-    }
   });
 
   this.map_.data.addListener("mouseout", function(event) {
     if (event.feature !== this_.feature_selected_) {    
         this_.map_.data.revertStyle();
+    }
+    this_.tooltip_.undrawTooltip();
+  });
+
+  this.map_.data.addListener("mousemove", function(event) {
+    if (event.feature.getProperty("data-value") !== undefined) {
+      this_.tooltip_.drawTooltip(event.feature, event.latLng);
     }
   });
 
@@ -249,14 +253,14 @@ context.GeoChart.prototype.draw = function(data, options={}) {
       if (event.feature.getProperty("data-value") !== undefined) {
         this_.selectFeature_(event.feature);
       } else {
-        this_.unselectFeature_(event.feature);
+        this_.unselectFeature_();
       }
     }
   });
 
   this.map_.addListener("click", function(event) {
     this_.map_.data.revertStyle();
-    this_.unselectFeature_(event.feature);
+    this_.unselectFeature_();
   });
 
 }
@@ -391,6 +395,14 @@ context.Tooltip.prototype.draw = function() {
 }
 
 context.Tooltip.prototype.drawTooltip = function(feature, latLng) {
+  // Update text
+  var id = feature.getId();
+  if (id !== this.id_span_.innerText) {
+    this.id_span_.innerText = id;
+    this.label_span_.innerText = feature.getProperty("data-label");
+    this.value_span_.innerText = feature.getProperty("data-value");
+  }
+
   // Calculate positioning
   var s = this.geo_chart_.options_.tooltipOffset;
   var px = this.getProjection().fromLatLngToDivPixel(latLng);
@@ -398,7 +410,6 @@ context.Tooltip.prototype.drawTooltip = function(feature, latLng) {
   var h = this.div_.offsetHeight;
   var top = 0;
   var left = 0;
-
   // Start with div up and left
   top = px.y - s - h;
   left = px.x - s - w;
@@ -409,13 +420,9 @@ context.Tooltip.prototype.drawTooltip = function(feature, latLng) {
   if (left < 0) {
     left = px.x + s;
   }
+  this.div_.style.top = top;
+  this.div_.style.left = left;
 
-  // Set text and positioning
-  this.id_span_.innerText = feature.getId();
-  this.label_span_.innerText = feature.getProperty("data-label");
-  this.value_span_.innerText = feature.getProperty("data-value");
-  this.div_.style.top = top + 'px';
-  this.div_.style.left = left + 'px';
   this.div_.style.visibility = "visible";
 }
 
