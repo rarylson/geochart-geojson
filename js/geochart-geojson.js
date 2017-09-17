@@ -196,21 +196,39 @@ context.GeoChart.prototype.draw = function(data, options) {
     return style;
   });
 
-  this.map_.data.addListener('mouseover', function(event) {
-    var highlight_style = Object.assign(
+  // Mouse event handlers
+
+  this.map_.data.addListener("mouseover", function(event) {
+    var highlighted_style = Object.assign(
         {}, this_.DEFAULT_OPTIONS.featuresHighlightedStyle,
         {zIndex: this_.CONSTANTS.highlightedZIndex});
 
     if (event.feature !== this_.feature_selected_) {    
         this_.map_.data.revertStyle();
-        this_.map_.data.overrideStyle(event.feature, highlight_style);
+        this_.map_.data.overrideStyle(event.feature, highlighted_style);
     }
   });
 
-  this.map_.data.addListener('mouseout', function(event) {
+  this.map_.data.addListener("mouseout", function(event) {
     if (event.feature !== this_.feature_selected_) {    
         this_.map_.data.revertStyle();
     }
+  });
+
+  this.map_.data.addListener("click", function(event) {
+    this_.map_.data.revertStyle();
+    if (event.feature !== this_.feature_selected_) {
+      if (event.feature.getProperty("data-value") !== undefined) {
+        this_.selectFeature_(event.feature);
+      } else {
+        this_.unselectFeature_(event.feature);
+      }
+    }
+  });
+
+  this.map_.addListener("click", function(event) {
+    this_.map_.data.revertStyle();
+    this_.unselectFeature_(event.feature);
   });
 
 }
@@ -252,8 +270,10 @@ context.GeoChart.prototype.setSelection = function(selection) {
   var id = "";
   var feature = null;
 
-  // Implemented only for a single row selection
-  if (Array.isArray(selection) && selection.length === 1) {
+  // Implemented only for zero and single row selections
+  if (! selection.length) {
+    this.unselectFeature_();
+  } else if (selection.length === 1) {
       id = this.data_.getValue(selection[0].row, 0);
       feature = this.map_.data.getFeatureById(id);
       this.selectFeature_(feature);
@@ -261,8 +281,16 @@ context.GeoChart.prototype.setSelection = function(selection) {
 }
 
 context.GeoChart.prototype.selectFeature_ = function(feature) {
+  this.unselectFeature_();
   this.feature_selected_ = feature;
   this.feature_selected_.setProperty("data-selected", true);
+}
+
+context.GeoChart.prototype.unselectFeature_ = function() {
+  if (this.feature_selected_) {
+    this.feature_selected_.removeProperty("data-selected");
+    this.feature_selected_ = null;
+  }
 }
 
 })(geochart_geojson);
