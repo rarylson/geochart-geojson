@@ -1,32 +1,35 @@
 // vim: set ts=2 sw=2 et colorcolumn=100 :
 
 /**
- * Namespace
- * @namespace
+ * Package "geochart_geojson"
+ *
+ * Provides GeoChart with GeoJSON support.
+ * 
+ * Contains the GeoChart class with its subcomponent classes.
  */
+// Namespace
 var geochart_geojson = {};
 
 (function(context) { 
 
-context.CONSTANTS = {
-  // zIndex of selected or highlighted features
-  // The selected (click) and highlighted (hover) features must have a zIndex higher than
-  // the other features.
-  selectedZIndex: 999,
-  highlightedZIndex: 1000,
-  // zIndex of the tooltip
-  // The tooltip must have a zIndex higher than the features and the selected and highlighted
-  // features. 
-  tooltipZIndex: 2000,
-  // Color axis constants
-  colorAxisIndicatorSize: "12px",
-  colorAxisIndicatorLeftOffset: -6,
-  colorAxisIndicatorTopOffset: -8
-}
+// Constants
+
+// zIndex of selected or highlighted features
+// The selected (click) and highlighted (hover) features must have a zIndex higher than
+// the other features.
+SELECTED_Z_INDEX = 999;
+HIGHLIGHTED_Z_INDEX = 1000;
+// zIndex of the tooltip
+// The tooltip must have a zIndex higher than the features and the selected and highlighted
+// features. 
+TOOLTIP_Z_INDEX = 2000;
+// Color axis constants
+COLOR_AXIS_INDICATOR_SIZE = "12px";
+COLOR_AXIS_INDICATOR_TOP_OFFSET = -8;
+COLOR_AXIS_INDICATOR_LEFT_OFFSET = -6;
 
 /**
  * GeoChart with GeoJSON support
- * @class
  *
  * These charts are very similar to the Google Charts geochart, but with GeoJSON support.
  * 
@@ -40,7 +43,9 @@ context.CONSTANTS = {
  * - https://developers.google.com/chart/interactive/docs/reference
  * - https://developers.google.com/maps/documentation/javascript/
  * 
- * @param {object} container - The HTML container for the chart.
+ * Param:
+ *
+ * - container: The HTML container for the chart.
  */
 context.GeoChart = function(container) {
   this.container = container;
@@ -56,13 +61,14 @@ context.GeoChart = function(container) {
   this.tooltip_ = null;
   this.color_axis_ = null;
   // Min and max values of the DataTable rows
-  // Used in the gradient color generation.
   this.min_ = 0;
   this.max_ = 0;
   // Feature selected by the user
   this.feature_selected_ = null;
 }
 
+// Default GeoChart options
+// TODO Document each option.
 context.GeoChart.prototype.DEFAULT_OPTIONS = {
   mapsOptions: null,
   mapsBackground: "none",
@@ -227,7 +233,7 @@ context.GeoChart.prototype.draw = function(data, options={}) {
       if (feature.getProperty("data-selected") === true) {
         style = Object.assign(
             style, this_.options_.featuresHighlightedStyle,
-            {zIndex: context.CONSTANTS.selectedZIndex}
+            {zIndex: SELECTED_Z_INDEX}
         );
       }
     }
@@ -240,7 +246,7 @@ context.GeoChart.prototype.draw = function(data, options={}) {
   this.map_.data.addListener("mouseover", function(event) {
     var highlighted_style = Object.assign(
         {}, this_.options_.featuresHighlightedStyle,
-        {zIndex: context.CONSTANTS.highlightedZIndex});
+        {zIndex: HIGHLIGHTED_Z_INDEX});
 
     if (event.feature !== this_.feature_selected_) {    
         this_.map_.data.revertStyle();
@@ -347,14 +353,13 @@ context.GeoChart.prototype.unselectFeature_ = function() {
   }
 }
 
-/**
- * Tooltip for GeoChart GeoJSON
- * @class
- *
- * It's an overlay layer to be placed on a Google Maps map.
- * 
- * @param {object} geoChart - The GeoChart GeoJSON object where the tooltip will be placed.
- */
+// Tooltip for GeoChart GeoJSON
+//
+// It's an overlay layer to be placed on a Google Maps map.
+// 
+// Param:
+//
+// - geoChart: The GeoChart GeoJSON object where the tooltip will be placed.
 context.Tooltip = function(geoChart) {
   this.geo_chart_ = geoChart;
 
@@ -377,7 +382,7 @@ context.Tooltip.prototype.onAdd = function() {
   div_style = Object.assign(
       {}, {position: "absolute", visibility: "hidden"},
       this.geo_chart_.options_.tooltip,
-      {zIndex: context.CONSTANTS.tooltipZIndex});
+      {zIndex: TOOLTIP_Z_INDEX});
   delete div_style.textStyle;
   Object.assign(div.style, div_style);
 
@@ -452,14 +457,13 @@ context.Tooltip.prototype.undrawTooltip = function() {
   this.div_.style.visibility = "hidden";
 }
 
-/**
- * Color axis for GeoChart GeoJSON
- * @class
- *
- * It's a control to be placed on a Google Maps map.
- * 
- * @param {object} geoChart - The GeoChart GeoJSON object where the color axis will be placed.
- */
+// Color axis for GeoChart GeoJSON
+//
+// It's a control to be placed on a Google Maps map.
+// 
+// Params:
+//
+// - geoChart: The GeoChart GeoJSON object where the color axis will be placed.
 context.ColorAxis = function(geoChart) {
   this.geo_chart_ = geoChart;
 
@@ -495,8 +499,8 @@ context.ColorAxis.prototype.draw_ = function() {
   axis_div_inner.style.background = this.getGradientString_();
   axis_div.appendChild(axis_div_inner);
   var indicator_span = document.createElement('span');
-  indicator_span.style.fontSize = context.CONSTANTS.colorAxisIndicatorSize;
-  indicator_span.style.top = context.CONSTANTS.colorAxisIndicatorTopOffset;
+  indicator_span.style.fontSize = COLOR_AXIS_INDICATOR_SIZE;
+  indicator_span.style.top = COLOR_AXIS_INDICATOR_TOP_OFFSET;
   indicator_span.style.position = "absolute";
   indicator_span.style.visibility = "hidden";
   indicator_span.innerText = "▼";
@@ -541,7 +545,7 @@ context.ColorAxis.prototype.drawIndicator = function(feature) {
   var relative_value = this.geo_chart_.getRelativeValue_(feature.getProperty("data-value"));
   var width = parseInt(this.geo_chart_.options_.colorAxis.width, 10);
   this.indicator_span_.style.left =
-      (relative_value * width + context.CONSTANTS.colorAxisIndicatorLeftOffset) + "px";
+      (relative_value * width + COLOR_AXIS_INDICATOR_LEFT_OFFSET) + "px";
 	this.indicator_span_.style.visibility = "visible";
 }
 
