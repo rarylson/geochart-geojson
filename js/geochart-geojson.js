@@ -120,7 +120,7 @@ context.GeoChart.prototype.getMapsOptions_ = function() {
     }];
     maps_options["backgroundColor"] = "none";
   } else {
-    throw "Invalid `mapsBackground` option";
+    throw new Error("Invalid `mapsBackground` option");
   }
 
   if (this.options_.mapsControl === false) {
@@ -129,7 +129,7 @@ context.GeoChart.prototype.getMapsOptions_ = function() {
     maps_options["draggable"] = false;
     maps_options["disableDoubleClickZoom"] = true;
   } else {
-    throw "Invalid `mapsControl` option";
+    throw new Error("Invalid `mapsControl` option");
   }
 
   return maps_options;
@@ -301,7 +301,7 @@ context.GeoChart.prototype.getColorArray_ = function(color) {
   });
   var result = regex.exec(color);
   if (! result) {
-    throw "Invalid color string";
+    throw new Error("Invalid color string");
   }
   color_array = [parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16)];
 
