@@ -19,7 +19,7 @@ context.CONSTANTS = {
   // features. 
   tooltipZIndex: 2000,
   // Color axis constants
-  ColorAxisIndicatorSize: "12px",
+  colorAxisIndicatorSize: "12px",
   colorAxisIndicatorLeftOffset: -6,
   colorAxisIndicatorTopOffset: -8
 }
@@ -178,13 +178,11 @@ context.GeoChart.prototype.draw = function(data, options={}) {
             this_.color_axis_.getContainer());
 
         // Create the tooltip
-        google.maps.event.addListener(this_.map_, "tooltip-ready", function() {
-          
-          // Trigger the ready event
-          // See: https://developers.google.com/chart/interactive/docs/dev/events#the-ready-event
-          google.visualization.events.trigger(this_, "ready", null);
-        });
         this_.tooltip_ = new context.Tooltip(this_);
+
+        // Trigger the ready event
+        // See: https://developers.google.com/chart/interactive/docs/dev/events#the-ready-event
+        google.visualization.events.trigger(this_, "ready", null);
       }
   );
 
@@ -248,6 +246,9 @@ context.GeoChart.prototype.draw = function(data, options={}) {
         this_.map_.data.revertStyle();
         this_.map_.data.overrideStyle(event.feature, highlighted_style);
     }
+    if (event.feature.getProperty("data-value") !== undefined) {
+      this_.color_axis_.drawIndicator(event.feature);
+    }
   });
 
   this.map_.data.addListener("mouseout", function(event) {
@@ -255,6 +256,7 @@ context.GeoChart.prototype.draw = function(data, options={}) {
         this_.map_.data.revertStyle();
     }
     this_.tooltip_.undrawTooltip();
+    this_.color_axis_.undrawIndicator();
   });
 
   this.map_.data.addListener("mousemove", function(event) {
@@ -410,8 +412,7 @@ context.Tooltip.prototype.onAdd = function() {
 
 context.Tooltip.prototype.draw = function() {
   // Do not draw nothing at first
-  // Only trigger an event
-  google.maps.event.trigger(this.map_, 'tooltip-ready');
+  return;
 }
 
 context.Tooltip.prototype.drawTooltip = function(feature, latLng) {
@@ -423,7 +424,7 @@ context.Tooltip.prototype.drawTooltip = function(feature, latLng) {
     this.value_span_.innerText = feature.getProperty("data-value");
   }
 
-  // Calculate positioning
+  // Set positioning
   var s = this.geo_chart_.options_.tooltipOffset;
   var px = this.getProjection().fromLatLngToDivPixel(latLng);
   var w = this.div_.offsetWidth;
@@ -443,6 +444,7 @@ context.Tooltip.prototype.drawTooltip = function(feature, latLng) {
   this.div_.style.top = top;
   this.div_.style.left = left;
 
+  // Show
   this.div_.style.visibility = "visible";
 }
 
@@ -493,8 +495,8 @@ context.ColorAxis.prototype.draw_ = function() {
   axis_div_inner.style.background = this.getGradientString_();
   axis_div.appendChild(axis_div_inner);
   var indicator_span = document.createElement('span');
-  indicator_span.style.fontSize = context.CONSTANTS.ColorAxisIndicatorSize;
-  indicator_span.style.top = context.CONSTANTS.ColorAxisIndicatortopOffset;
+  indicator_span.style.fontSize = context.CONSTANTS.colorAxisIndicatorSize;
+  indicator_span.style.top = context.CONSTANTS.colorAxisIndicatorTopOffset;
   indicator_span.style.position = "absolute";
   indicator_span.style.visibility = "hidden";
   indicator_span.innerText = "▼";
@@ -524,15 +526,9 @@ context.ColorAxis.prototype.getGradientString_ = function() {
     this.geo_chart_.getColorArrayStr_(gradient_colors_arr[1])
   ];
 
-  gradient_string +=
+  gradient_string =
       "-moz-linear-gradient(left, " + gradient_colors_str[0] + ", " +
       gradient_colors_str[1] + ")";
-  //gradient_string +=
-  //    "-webkit-linear-gradient(left, " + gradient_colors_str[0] + ", " +
-  //    gradient_colors_str[1] + ")";
-  //gradient_string +=
-  //    "linear-gradient(to right, " + gradient_colors_str[0] + ", " +
-  //    gradient_colors_str[1] + ")";
 
   return gradient_string;
 }
@@ -542,15 +538,15 @@ context.ColorAxis.prototype.getContainer = function() {
 }
 
 context.ColorAxis.prototype.drawIndicator = function(feature) {
-  var relative_value = this_.geo_chart_.getRelativeValue_(feature.getProperty("data-value"));
-  var width = this.geo_chart_.options_.colorAxis.width;
+  var relative_value = this.geo_chart_.getRelativeValue_(feature.getProperty("data-value"));
+  var width = parseInt(this.geo_chart_.options_.colorAxis.width, 10);
   this.indicator_span_.style.left =
-      (relative_value * width + context.CONSTANTS.ColorAxisIndicatorLeftOffset) + "px";
-	this.ruler_span_.style.visibility = "visible";
+      (relative_value * width + context.CONSTANTS.colorAxisIndicatorLeftOffset) + "px";
+	this.indicator_span_.style.visibility = "visible";
 }
 
 context.ColorAxis.prototype.undrawIndicator = function() {
-	this.ruler_span_.style.visibility = "hidden";
+	this.indicator_span_.style.visibility = "hidden";
 }
 
 })(geochart_geojson);
