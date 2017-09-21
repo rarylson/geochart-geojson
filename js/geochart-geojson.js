@@ -1,4 +1,4 @@
-// vim: set ts=2 sw=2 et colorcolumn=100 :
+// vim: set ts=2 sw=2 et colorcolumn=80 :
 
 /**
  * Package "geochart_geojson"
@@ -7,31 +7,31 @@
  * 
  * Contains the GeoChart class with its subcomponent classes.
  */
-// Namespace
 var geochart_geojson = {};
 
 (function(context) { 
 
+
 // Constants
 
-// zIndex of selected or highlighted features
-// The selected (click) and highlighted (hover) features must have a zIndex higher than
-// the other features.
+// zIndex constants
+// The selected (click) and highlighted (hover) features must have a zIndex
+// higher than the other features. The tooltip must have a zIndex higher than
+// the features and the selected and highlighted features.
 SELECTED_Z_INDEX = 999;
 HIGHLIGHTED_Z_INDEX = 1000;
-// zIndex of the tooltip
-// The tooltip must have a zIndex higher than the features and the selected and highlighted
-// features. 
 TOOLTIP_Z_INDEX = 2000;
 // Color axis constants
 COLOR_AXIS_INDICATOR_SIZE = "12px";
 COLOR_AXIS_INDICATOR_TOP_OFFSET = -8;
 COLOR_AXIS_INDICATOR_LEFT_OFFSET = -6;
 
+
 /**
  * GeoChart with GeoJSON support
  *
- * These charts are very similar to the Google Charts geochart, but with GeoJSON support.
+ * These charts are very similar to the Google Charts geochart, but with
+ * GeoJSON support.
  * 
  * Code based on many Google Charts and Google Maps API guides and references.
  * 
@@ -43,20 +43,21 @@ COLOR_AXIS_INDICATOR_LEFT_OFFSET = -6;
  * - https://developers.google.com/chart/interactive/docs/reference
  * - https://developers.google.com/maps/documentation/javascript/
  * 
- * Param:
+ * Params:
  *
  * - container: The HTML container for the chart.
  */
-context.GeoChart = function(container) {
+GeoChart = function(container) {
   this.container = container;
 
   this.data_ = null;
   this.options_ = null;
   // The inner Google Maps map object
-  // This object will hold the GeoJSON map (in its overlay layer), the tooltip overlay and the
-  // color axis.
-  // Optionally, it will also handle the underlying map layer (map, satellite or simple map) and
-  // the map control (zoom, map drag). These features are disabled by default, so the 
+  // This object will hold the GeoJSON map (in its overlay layer), the tooltip
+  // overlay and the color axis.
+  // Optionally, it will also handle the underlying map layer (map, satellite
+  // or simple map) and the map control (zoom, map drag). These features are
+  // disabled by default.
   this.maps_map_ = null;
   this.tooltip_ = null;
   this.color_axis_ = null;
@@ -69,7 +70,7 @@ context.GeoChart = function(container) {
 
 // Default GeoChart options
 // TODO Document each option.
-context.GeoChart.prototype.DEFAULT_OPTIONS = {
+GeoChart.prototype.DEFAULT_OPTIONS = {
   mapsOptions: null,
   mapsBackground: "none",
   mapsControl: false,
@@ -111,7 +112,7 @@ context.GeoChart.prototype.DEFAULT_OPTIONS = {
 }
 
 // TODO Implement other `mapsBackground` and `mapsControl` options
-context.GeoChart.prototype.getMapsOptions_ = function() {
+GeoChart.prototype.getMapsOptions_ = function() {
   var maps_options = this.options_.mapsOptions;
 
   if (this.options_.mapsBackground === "none") {
@@ -135,19 +136,22 @@ context.GeoChart.prototype.getMapsOptions_ = function() {
   return maps_options;
 }
 
-context.GeoChart.prototype.draw = function(data, options={}) {
+GeoChart.prototype.draw = function(data, options={}) {
   this.data_ = data;
   // FIXME This doesn't run a deep copy.
-  // See: https://stackoverflow.com/questions/27936772/how-to-deep-merge-instead-of-shallow-merge
-  this.options_ = Object.assign({}, context.GeoChart.prototype.DEFAULT_OPTIONS, options);
+  // See: https://stackoverflow.com/questions/27936772/how-to-deep-merge-
+  //          instead-of-shallow-merge
+  this.options_ = Object.assign(
+      {}, context.GeoChart.prototype.DEFAULT_OPTIONS, options);
 
   var this_ = this;
 
   // Create the Google Maps object
   var maps_options = this.getMapsOptions_();
-  // TODO We could implement custom zooming when mapsBackground = "none" using custom
-  // projections.
-  // See: https://groups.google.com/forum/#!topic/google-maps-js-api-v3/AbOHZlLQLCg
+  // TODO We could implement custom zooming when mapsBackground = "none" using
+  // custom projections.
+  // See: https://groups.google.com/forum/#!topic/google-maps-js-api-
+  //          v3/AbOHZlLQLCg
   this.map_ = new google.maps.Map(this.container, maps_options);
 
   // Load the GeoJSON data
@@ -179,15 +183,16 @@ context.GeoChart.prototype.draw = function(data, options={}) {
         this_.max_ = max;
        
         // Create the color axis
-        this_.color_axis_ = new context.ColorAxis(this_);
+        this_.color_axis_ = new ColorAxis(this_);
         this_.map_.controls[google.maps.ControlPosition.LEFT_BOTTOM].push(
             this_.color_axis_.getContainer());
 
         // Create the tooltip
-        this_.tooltip_ = new context.Tooltip(this_);
+        this_.tooltip_ = new Tooltip(this_);
 
         // Trigger the ready event
-        // See: https://developers.google.com/chart/interactive/docs/dev/events#the-ready-event
+        // See: https://developers.google.com/chart/interactive/docs/dev/
+        //          events#the-ready-event
         google.visualization.events.trigger(this_, "ready", null);
       }
   );
@@ -213,14 +218,16 @@ context.GeoChart.prototype.draw = function(data, options={}) {
           this_.getColorArray_(this_.options_.featuresGradientStrokeColors[0]),
           this_.getColorArray_(this_.options_.featuresGradientStrokeColors[1])
       ];
-      var relative_value = this_.getRelativeValue_(feature.getProperty("data-value"));
+      var relative_value = this_.getRelativeValue_(
+          feature.getProperty("data-value"));
 
       for (var i = 0; i < 3; i++) {
         fill_color_arr[i] = 
-            (gradient_colors_arr[1][i] - gradient_colors_arr[0][i]) * relative_value +
-            gradient_colors_arr[0][i];
+            ((gradient_colors_arr[1][i] - gradient_colors_arr[0][i]) *
+            relative_value) + gradient_colors_arr[0][i];
         stroke_color_arr[i] = 
-            ((gradient_stroke_colors_arr[1][i] - gradient_stroke_colors_arr[0][i]) *
+            ((gradient_stroke_colors_arr[1][i] -
+            gradient_stroke_colors_arr[0][i]) *
             relative_value) + gradient_stroke_colors_arr[0][i];
       }
 
@@ -289,8 +296,9 @@ context.GeoChart.prototype.draw = function(data, options={}) {
 
 }
 
-// Based on: https://stackoverflow.com/questions/5623838/rgb-to-hex-and-hex-to-rgb
-context.GeoChart.prototype.getColorArray_ = function(color) {
+// Based on: https://stackoverflow.com/questions/5623838/rgb-to-hex-and-hex-
+//              to-rgb
+GeoChart.prototype.getColorArray_ = function(color) {
   var short_regex = /^#?([\da-f])([\da-f])([\da-f])$/i;
   var regex = /^#?([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i;
 
@@ -303,30 +311,39 @@ context.GeoChart.prototype.getColorArray_ = function(color) {
   if (! result) {
     throw new Error("Invalid color string");
   }
-  color_array = [parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16)];
+  color_array = [
+    parseInt(result[1], 16),
+    parseInt(result[2], 16),
+    parseInt(result[3], 16)
+  ];
 
   return color_array;
 }
 
-context.GeoChart.prototype.getColorArrayStr_ = function(color_array) {
-  return "rgb(" + color_array[0] + ", " + color_array[1] + ", " + color_array[2] + ")";
+GeoChart.prototype.getColorArrayStr_ = function(color_array) {
+  return "rgb(" + color_array[0] + ", " + color_array[1] + ", " +
+      color_array[2] + ")";
 }
 
-context.GeoChart.prototype.getRelativeValue_ = function(value) {
+GeoChart.prototype.getRelativeValue_ = function(value) {
   return (value - this.min_) / (this.max_ - this.min_);
 }
 
 // Entry selected by the user
-// See: https://developers.google.com/chart/interactive/docs/reference#getselection
-context.GeoChart.prototype.getSelection = function() {
+// See: https://developers.google.com/chart/interactive/docs/reference
+//          #getselection
+GeoChart.prototype.getSelection = function() {
   if (! this.feature_selected_) {
     return [];
   } else {
-    return [{row: this.feature_selected_.getProperty("data-row"), column: null}];
+    return [{
+      row: this.feature_selected_.getProperty("data-row"),
+      column: null
+    }];
   }
 }
 
-context.GeoChart.prototype.setSelection = function(selection) {
+GeoChart.prototype.setSelection = function(selection) {
   var id = "";
   var feature = null;
 
@@ -340,27 +357,30 @@ context.GeoChart.prototype.setSelection = function(selection) {
   }
 }
 
-context.GeoChart.prototype.selectFeature_ = function(feature) {
+GeoChart.prototype.selectFeature_ = function(feature) {
   this.unselectFeature_();
   this.feature_selected_ = feature;
   this.feature_selected_.setProperty("data-selected", true);
 }
 
-context.GeoChart.prototype.unselectFeature_ = function() {
+GeoChart.prototype.unselectFeature_ = function() {
   if (this.feature_selected_) {
     this.feature_selected_.removeProperty("data-selected");
     this.feature_selected_ = null;
   }
 }
 
+context.GeoChart = GeoChart;
+
+
 // Tooltip for GeoChart GeoJSON
 //
 // It's an overlay layer to be placed on a Google Maps map.
 // 
-// Param:
+// Params:
 //
 // - geoChart: The GeoChart GeoJSON object where the tooltip will be placed.
-context.Tooltip = function(geoChart) {
+Tooltip = function(geoChart) {
   this.geo_chart_ = geoChart;
 
   this.div_ = null;
@@ -373,9 +393,9 @@ context.Tooltip = function(geoChart) {
   this.setMap(geoChart.map_);
 }
 
-context.Tooltip.prototype = new google.maps.OverlayView();
+Tooltip.prototype = new google.maps.OverlayView();
 
-context.Tooltip.prototype.onAdd = function() {
+Tooltip.prototype.onAdd = function() {
   // Create the main div
   var div = document.createElement("div");
   var div_style = {};
@@ -415,12 +435,12 @@ context.Tooltip.prototype.onAdd = function() {
   this.getPanes().overlayLayer.appendChild(div);
 }
 
-context.Tooltip.prototype.draw = function() {
+Tooltip.prototype.draw = function() {
   // Do not draw nothing at first
   return;
 }
 
-context.Tooltip.prototype.drawTooltip = function(feature, latLng) {
+Tooltip.prototype.drawTooltip = function(feature, latLng) {
   // Update text
   var id = feature.getId();
   if (id !== this.id_span_.innerText) {
@@ -453,9 +473,12 @@ context.Tooltip.prototype.drawTooltip = function(feature, latLng) {
   this.div_.style.visibility = "visible";
 }
 
-context.Tooltip.prototype.undrawTooltip = function() {
+Tooltip.prototype.undrawTooltip = function() {
   this.div_.style.visibility = "hidden";
 }
+
+context.Tooltip = Tooltip;
+
 
 // Color axis for GeoChart GeoJSON
 //
@@ -464,7 +487,7 @@ context.Tooltip.prototype.undrawTooltip = function() {
 // Params:
 //
 // - geoChart: The GeoChart GeoJSON object where the color axis will be placed.
-context.ColorAxis = function(geoChart) {
+ColorAxis = function(geoChart) {
   this.geo_chart_ = geoChart;
 
   this.div_ = null;
@@ -473,11 +496,12 @@ context.ColorAxis = function(geoChart) {
   this.draw_();
 }
 
-context.ColorAxis.prototype.draw_ = function() {
+ColorAxis.prototype.draw_ = function() {
   var div = document.createElement('div');
 
   var div_inner = document.createElement('div');
-  Object.assign(div_inner.style, this.geo_chart_.options_.colorAxis.textStyle);
+  Object.assign(
+      div_inner.style, this.geo_chart_.options_.colorAxis.textStyle);
 
   var min_div =  document.createElement('div');
   min_div.style.padding = "4px";
@@ -518,12 +542,14 @@ context.ColorAxis.prototype.draw_ = function() {
   this.indicator_span_ = indicator_span;
 }
 
-context.ColorAxis.prototype.getGradientString_ = function() {
+ColorAxis.prototype.getGradientString_ = function() {
   var gradient_string = "";
   
   var gradient_colors_arr = [
-      this.geo_chart_.getColorArray_(this.geo_chart_.options_.featuresGradientColors[0]),
-      this.geo_chart_.getColorArray_(this.geo_chart_.options_.featuresGradientColors[1])
+      this.geo_chart_.getColorArray_(
+          this.geo_chart_.options_.featuresGradientColors[0]),
+      this.geo_chart_.getColorArray_(
+          this.geo_chart_.options_.featuresGradientColors[1])
   ];
   var gradient_colors_str = [
     this.geo_chart_.getColorArrayStr_(gradient_colors_arr[0]),
@@ -537,20 +563,24 @@ context.ColorAxis.prototype.getGradientString_ = function() {
   return gradient_string;
 }
 
-context.ColorAxis.prototype.getContainer = function() {
+ColorAxis.prototype.getContainer = function() {
   return this.div_;
 }
 
-context.ColorAxis.prototype.drawIndicator = function(feature) {
-  var relative_value = this.geo_chart_.getRelativeValue_(feature.getProperty("data-value"));
+ColorAxis.prototype.drawIndicator = function(feature) {
+  var relative_value = this.geo_chart_.getRelativeValue_(
+      feature.getProperty("data-value"));
   var width = parseInt(this.geo_chart_.options_.colorAxis.width, 10);
   this.indicator_span_.style.left =
       (relative_value * width + COLOR_AXIS_INDICATOR_LEFT_OFFSET) + "px";
 	this.indicator_span_.style.visibility = "visible";
 }
 
-context.ColorAxis.prototype.undrawIndicator = function() {
+ColorAxis.prototype.undrawIndicator = function() {
 	this.indicator_span_.style.visibility = "hidden";
 }
+
+context.ColorAxis = ColorAxis;
+
 
 })(geochart_geojson);
