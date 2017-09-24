@@ -4,8 +4,7 @@ Changelog
 0.0.1
 -----
 
-- Color cross-browser support (works on Chrome);
-    - Previously, it only worked on Firefox.
+- **Fix:** Color cross-browser support (also works on Chrome now).
 
 0.0.0
 -----
