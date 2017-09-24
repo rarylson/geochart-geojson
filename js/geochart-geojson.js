@@ -520,7 +520,10 @@ ColorAxis.prototype.draw_ = function() {
   axis_div_inner.style.height = this.geo_chart_.options_.colorAxis.height;
   axis_div_inner.style.padding = "0";
   axis_div_inner.style.margin = "0";
-  axis_div_inner.style.background = this.getGradientString_();
+  // See: https://stackoverflow.com/a/16219600
+  axis_div_inner.setAttribute(
+      "style",
+      axis_div_inner.getAttribute("style") + "; " + this.getGradientStr_());
   axis_div.appendChild(axis_div_inner);
   var indicator_span = document.createElement('span');
   indicator_span.style.fontSize = COLOR_AXIS_INDICATOR_SIZE;
@@ -542,8 +545,15 @@ ColorAxis.prototype.draw_ = function() {
   this.indicator_span_ = indicator_span;
 }
 
-ColorAxis.prototype.getGradientString_ = function() {
-  var gradient_string = "";
+// Set the background gradient string
+// See: https://stackoverflow.com/a/16219600
+ColorAxis.prototype.getGradientStr_ = function() {
+  var gradient_string =
+      "background-image: -o-linear-gradient(left, {c1}, {c2}); " + 
+      "background-image: -moz-linear-gradient(left, {c1}, {c2}); " + 
+      "background-image: -webkit-linear-gradient(left, {c1}, {c2}); " + 
+      "background-image: -ms-linear-gradient(left, {c1}, {c2}); " + 
+      "background: linear-gradient(left, {c1}, {c2})"; 
 
   var gradient_colors_arr = [
       this.geo_chart_.getColorArray_(
@@ -555,10 +565,9 @@ ColorAxis.prototype.getGradientString_ = function() {
     this.geo_chart_.getColorArrayStr_(gradient_colors_arr[0]),
     this.geo_chart_.getColorArrayStr_(gradient_colors_arr[1])
   ];
-
-  gradient_string =
-      "-moz-linear-gradient(left, " + gradient_colors_str[0] + ", " +
-      gradient_colors_str[1] + ")";
+  gradient_string = gradient_string.
+      replace(/\{c1\}/g, gradient_colors_str[0]).
+      replace(/\{c2\}/g, gradient_colors_str[1]);
 
   return gradient_string;
 }
