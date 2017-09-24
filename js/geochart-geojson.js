@@ -4,12 +4,12 @@
  * Package "geochart_geojson"
  *
  * Provides GeoChart with GeoJSON support.
- * 
+ *
  * Contains the GeoChart class with its subcomponent classes.
  */
 var geochart_geojson = {};
 
-(function(context) { 
+(function(context) {
 
 
 // Constants
@@ -32,17 +32,17 @@ COLOR_AXIS_INDICATOR_LEFT_OFFSET = -6;
  *
  * These charts are very similar to the Google Charts geochart, but with
  * GeoJSON support.
- * 
+ *
  * Code based on many Google Charts and Google Maps API guides and references.
- * 
+ *
  * See:
- * 
+ *
  * - https://developers.google.com/chart/interactive/docs/dev/
  * - https://developers.google.com/chart/interactive/docs/gallery/geochart
  * - https://developers.google.com/chart/interactive/docs/datatables_dataviews
  * - https://developers.google.com/chart/interactive/docs/reference
  * - https://developers.google.com/maps/documentation/javascript/
- * 
+ *
  * Params:
  *
  * - container: The HTML container for the chart.
@@ -165,9 +165,9 @@ GeoChart.prototype.draw = function(data, options={}) {
         for (var row = 0; row < data.getNumberOfRows(); row++) {
           var id = data.getValue(row, 0);
           var value = data.getValue(row, 1);
-          var feature = this_.map_.data.getFeatureById(id);          
+          var feature = this_.map_.data.getFeatureById(id);
 
-          // Keep track of min and max values
+          // Also keep track of min and max values
           if (value < min) {
             min = value;
           }
@@ -181,7 +181,7 @@ GeoChart.prototype.draw = function(data, options={}) {
         }
         this_.min_ = min;
         this_.max_ = max;
-       
+
         // Create the color axis
         this_.color_axis_ = new ColorAxis(this_);
         this_.map_.controls[google.maps.ControlPosition.LEFT_BOTTOM].push(
@@ -203,7 +203,7 @@ GeoChart.prototype.draw = function(data, options={}) {
     var style = Object.assign(
         {}, {cursor: "default"},
         this_.options_.featuresStyle);
-    
+
     // Feature with data style
     // Colorize the features with data (using the gradient colors)
     if (feature.getProperty("data-value") !== undefined) {
@@ -222,13 +222,13 @@ GeoChart.prototype.draw = function(data, options={}) {
           feature.getProperty("data-value"));
 
       for (var i = 0; i < 3; i++) {
-        fill_color_arr[i] = 
+        fill_color_arr[i] = Math.round(
             ((gradient_colors_arr[1][i] - gradient_colors_arr[0][i]) *
-            relative_value) + gradient_colors_arr[0][i];
-        stroke_color_arr[i] = 
+            relative_value) + gradient_colors_arr[0][i]);
+        stroke_color_arr[i] = Math.round(
             ((gradient_stroke_colors_arr[1][i] -
             gradient_stroke_colors_arr[0][i]) *
-            relative_value) + gradient_stroke_colors_arr[0][i];
+            relative_value) + gradient_stroke_colors_arr[0][i]);
       }
 
       style = Object.assign(style, {
@@ -255,7 +255,7 @@ GeoChart.prototype.draw = function(data, options={}) {
         {}, this_.options_.featuresHighlightedStyle,
         {zIndex: HIGHLIGHTED_Z_INDEX});
 
-    if (event.feature !== this_.feature_selected_) {    
+    if (event.feature !== this_.feature_selected_) {
         this_.map_.data.revertStyle();
         this_.map_.data.overrideStyle(event.feature, highlighted_style);
     }
@@ -265,7 +265,7 @@ GeoChart.prototype.draw = function(data, options={}) {
   });
 
   this.map_.data.addListener("mouseout", function(event) {
-    if (event.feature !== this_.feature_selected_) {    
+    if (event.feature !== this_.feature_selected_) {
         this_.map_.data.revertStyle();
     }
     this_.tooltip_.undrawTooltip();
@@ -376,7 +376,7 @@ context.GeoChart = GeoChart;
 // Tooltip for GeoChart GeoJSON
 //
 // It's an overlay layer to be placed on a Google Maps map.
-// 
+//
 // Params:
 //
 // - geoChart: The GeoChart GeoJSON object where the tooltip will be placed.
@@ -426,7 +426,7 @@ Tooltip.prototype.onAdd = function() {
   p2.appendChild(document.createTextNode(": "));
   p2.appendChild(value_span);
   div.appendChild(p2);
-   
+
   this.div_ = div;
   this.id_span_ = id_span;
   this.label_span_ = label_span;
@@ -483,7 +483,7 @@ context.Tooltip = Tooltip;
 // Color axis for GeoChart GeoJSON
 //
 // It's a control to be placed on a Google Maps map.
-// 
+//
 // Params:
 //
 // - geoChart: The GeoChart GeoJSON object where the color axis will be placed.
@@ -544,7 +544,7 @@ ColorAxis.prototype.draw_ = function() {
 
 ColorAxis.prototype.getGradientString_ = function() {
   var gradient_string = "";
-  
+
   var gradient_colors_arr = [
       this.geo_chart_.getColorArray_(
           this.geo_chart_.options_.featuresGradientColors[0]),
@@ -573,11 +573,11 @@ ColorAxis.prototype.drawIndicator = function(feature) {
   var width = parseInt(this.geo_chart_.options_.colorAxis.width, 10);
   this.indicator_span_.style.left =
       (relative_value * width + COLOR_AXIS_INDICATOR_LEFT_OFFSET) + "px";
-	this.indicator_span_.style.visibility = "visible";
+  this.indicator_span_.style.visibility = "visible";
 }
 
 ColorAxis.prototype.undrawIndicator = function() {
-	this.indicator_span_.style.visibility = "hidden";
+  this.indicator_span_.style.visibility = "hidden";
 }
 
 context.ColorAxis = ColorAxis;
