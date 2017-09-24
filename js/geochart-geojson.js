@@ -549,11 +549,11 @@ ColorAxis.prototype.draw_ = function() {
 // See: https://stackoverflow.com/a/16219600
 ColorAxis.prototype.getGradientStr_ = function() {
   var gradient_string =
-      "background-image: -o-linear-gradient(left, {c1}, {c2}); " + 
-      "background-image: -moz-linear-gradient(left, {c1}, {c2}); " + 
-      "background-image: -webkit-linear-gradient(left, {c1}, {c2}); " + 
-      "background-image: -ms-linear-gradient(left, {c1}, {c2}); " + 
-      "background: linear-gradient(left, {c1}, {c2})"; 
+      "background-image: -o-linear-gradient(left, {c1}, {c2}); " +
+      "background-image: -moz-linear-gradient(left, {c1}, {c2}); " +
+      "background-image: -webkit-linear-gradient(left, {c1}, {c2}); " +
+      "background-image: -ms-linear-gradient(left, {c1}, {c2}); " +
+      "background: linear-gradient(left, {c1}, {c2})";
 
   var gradient_colors_arr = [
       this.geo_chart_.getColorArray_(
