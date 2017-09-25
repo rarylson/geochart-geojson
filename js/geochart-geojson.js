@@ -66,7 +66,7 @@ GeoChart = function(container) {
   this.max_ = 0;
   // Feature selected by the user
   this.feature_selected_ = null;
-}
+};
 
 // Default GeoChart options
 // TODO Document each option.
@@ -82,7 +82,7 @@ GeoChart.prototype.DEFAULT_OPTIONS = {
   },
   featuresHighlightedStyle: {
     strokeWeight: 3,
-    strokeOpacity: 1,
+    strokeOpacity: 1
   },
   featuresGradientColors: ["#efe6dc", "#109618"],
   featuresGradientStrokeColors: ["#d7cfc6", "0e8716"],
@@ -109,7 +109,7 @@ GeoChart.prototype.DEFAULT_OPTIONS = {
       fontSize: "14px"
     }
   }
-}
+};
 
 // TODO Implement other `mapsBackground` and `mapsControl` options
 GeoChart.prototype.getMapsOptions_ = function() {
@@ -134,7 +134,7 @@ GeoChart.prototype.getMapsOptions_ = function() {
   }
 
   return maps_options;
-}
+};
 
 GeoChart.prototype.draw = function(data, options={}) {
   this.data_ = data;
@@ -256,8 +256,8 @@ GeoChart.prototype.draw = function(data, options={}) {
         {zIndex: HIGHLIGHTED_Z_INDEX});
 
     if (event.feature !== this_.feature_selected_) {
-        this_.map_.data.revertStyle();
-        this_.map_.data.overrideStyle(event.feature, highlighted_style);
+      this_.map_.data.revertStyle();
+      this_.map_.data.overrideStyle(event.feature, highlighted_style);
     }
     if (event.feature.getProperty("data-value") !== undefined) {
       this_.color_axis_.drawIndicator(event.feature);
@@ -266,7 +266,7 @@ GeoChart.prototype.draw = function(data, options={}) {
 
   this.map_.data.addListener("mouseout", function(event) {
     if (event.feature !== this_.feature_selected_) {
-        this_.map_.data.revertStyle();
+      this_.map_.data.revertStyle();
     }
     this_.tooltip_.undrawTooltip();
     this_.color_axis_.undrawIndicator();
@@ -294,7 +294,7 @@ GeoChart.prototype.draw = function(data, options={}) {
     this_.unselectFeature_();
   });
 
-}
+};
 
 // Based on: https://stackoverflow.com/questions/5623838/rgb-to-hex-and-hex-
 //              to-rgb
@@ -318,16 +318,16 @@ GeoChart.prototype.getColorArray_ = function(color) {
   ];
 
   return color_array;
-}
+};
 
 GeoChart.prototype.getColorArrayStr_ = function(color_array) {
   return "rgb(" + color_array[0] + ", " + color_array[1] + ", " +
       color_array[2] + ")";
-}
+};
 
 GeoChart.prototype.getRelativeValue_ = function(value) {
   return (value - this.min_) / (this.max_ - this.min_);
-}
+};
 
 // Entry selected by the user
 // See: https://developers.google.com/chart/interactive/docs/reference
@@ -341,7 +341,7 @@ GeoChart.prototype.getSelection = function() {
       column: null
     }];
   }
-}
+};
 
 GeoChart.prototype.setSelection = function(selection) {
   var id = "";
@@ -355,20 +355,20 @@ GeoChart.prototype.setSelection = function(selection) {
       feature = this.map_.data.getFeatureById(id);
       this.selectFeature_(feature);
   }
-}
+};
 
 GeoChart.prototype.selectFeature_ = function(feature) {
   this.unselectFeature_();
   this.feature_selected_ = feature;
   this.feature_selected_.setProperty("data-selected", true);
-}
+};
 
 GeoChart.prototype.unselectFeature_ = function() {
   if (this.feature_selected_) {
     this.feature_selected_.removeProperty("data-selected");
     this.feature_selected_ = null;
   }
-}
+};
 
 context.GeoChart = GeoChart;
 
@@ -391,7 +391,7 @@ Tooltip = function(geoChart) {
   this.LatLng = null;
 
   this.setMap(geoChart.map_);
-}
+};
 
 Tooltip.prototype = new google.maps.OverlayView();
 
@@ -433,12 +433,12 @@ Tooltip.prototype.onAdd = function() {
   this.value_span_ = value_span;
 
   this.getPanes().overlayLayer.appendChild(div);
-}
+};
 
 Tooltip.prototype.draw = function() {
   // Do not draw nothing at first
   return;
-}
+};
 
 Tooltip.prototype.drawTooltip = function(feature, latLng) {
   // Update text
@@ -471,11 +471,11 @@ Tooltip.prototype.drawTooltip = function(feature, latLng) {
 
   // Show
   this.div_.style.visibility = "visible";
-}
+};
 
 Tooltip.prototype.undrawTooltip = function() {
   this.div_.style.visibility = "hidden";
-}
+};
 
 context.Tooltip = Tooltip;
 
@@ -494,7 +494,7 @@ ColorAxis = function(geoChart) {
   this.indicator_span_ = null;
 
   this.draw_();
-}
+};
 
 ColorAxis.prototype.draw_ = function() {
   var div = document.createElement('div');
@@ -543,7 +543,7 @@ ColorAxis.prototype.draw_ = function() {
   div.appendChild(div_inner);
   this.div_ = div;
   this.indicator_span_ = indicator_span;
-}
+};
 
 // Set the background gradient string
 // See: https://stackoverflow.com/a/16219600
@@ -570,11 +570,11 @@ ColorAxis.prototype.getGradientStr_ = function() {
       replace(/\{c2\}/g, gradient_colors_str[1]);
 
   return gradient_string;
-}
+};
 
 ColorAxis.prototype.getContainer = function() {
   return this.div_;
-}
+};
 
 ColorAxis.prototype.drawIndicator = function(feature) {
   var relative_value = this.geo_chart_.getRelativeValue_(
@@ -583,11 +583,11 @@ ColorAxis.prototype.drawIndicator = function(feature) {
   this.indicator_span_.style.left =
       (relative_value * width + COLOR_AXIS_INDICATOR_LEFT_OFFSET) + "px";
   this.indicator_span_.style.visibility = "visible";
-}
+};
 
 ColorAxis.prototype.undrawIndicator = function() {
   this.indicator_span_.style.visibility = "hidden";
-}
+};
 
 context.ColorAxis = ColorAxis;
 
