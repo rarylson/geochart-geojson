@@ -144,8 +144,6 @@ GeoChart.prototype.draw = function(data, options={}) {
   this.options_ = Object.assign(
       {}, context.GeoChart.prototype.DEFAULT_OPTIONS, options);
 
-  var this_ = this;
-
   // Create the Google Maps object
   var maps_options = this.getMapsOptions_();
   // TODO We could implement custom zooming when mapsBackground = "none" using
@@ -165,7 +163,7 @@ GeoChart.prototype.draw = function(data, options={}) {
         for (var row = 0; row < data.getNumberOfRows(); row++) {
           var id = data.getValue(row, 0);
           var value = data.getValue(row, 1);
-          var feature = this_.map_.data.getFeatureById(id);
+          var feature = this.map_.data.getFeatureById(id);
 
           // Also keep track of min and max values
           if (value < min) {
@@ -179,22 +177,22 @@ GeoChart.prototype.draw = function(data, options={}) {
           feature.setProperty("data-label", data.getColumnLabel(1));
           feature.setProperty("data-value", value);
         }
-        this_.min_ = min;
-        this_.max_ = max;
+        this.min_ = min;
+        this.max_ = max;
 
         // Create the color axis
-        this_.color_axis_ = new ColorAxis(this_);
-        this_.map_.controls[google.maps.ControlPosition.LEFT_BOTTOM].push(
-            this_.color_axis_.getContainer());
+        this.color_axis_ = new ColorAxis(this);
+        this.map_.controls[google.maps.ControlPosition.LEFT_BOTTOM].push(
+            this.color_axis_.getContainer());
 
         // Create the tooltip
-        this_.tooltip_ = new Tooltip(this_);
+        this.tooltip_ = new Tooltip(this);
 
         // Trigger the ready event
         // See: https://developers.google.com/chart/interactive/docs/dev/
         //          events#the-ready-event
-        google.visualization.events.trigger(this_, "ready", null);
-      }
+        google.visualization.events.trigger(this, "ready", null);
+      }.bind(this)
   );
 
   // Define the feature styles
@@ -202,7 +200,7 @@ GeoChart.prototype.draw = function(data, options={}) {
     // Default style
     var style = Object.assign(
         {}, {cursor: "default"},
-        this_.options_.featuresStyle);
+        this.options_.featuresStyle);
 
     // Feature with data style
     // Colorize the features with data (using the gradient colors)
@@ -211,14 +209,14 @@ GeoChart.prototype.draw = function(data, options={}) {
       var stroke_color_arr = [];
 
       var gradient_colors_arr = [
-          this_.getColorArray_(this_.options_.featuresGradientColors[0]),
-          this_.getColorArray_(this_.options_.featuresGradientColors[1])
+          this.getColorArray_(this.options_.featuresGradientColors[0]),
+          this.getColorArray_(this.options_.featuresGradientColors[1])
       ];
       var gradient_stroke_colors_arr = [
-          this_.getColorArray_(this_.options_.featuresGradientStrokeColors[0]),
-          this_.getColorArray_(this_.options_.featuresGradientStrokeColors[1])
+          this.getColorArray_(this.options_.featuresGradientStrokeColors[0]),
+          this.getColorArray_(this.options_.featuresGradientStrokeColors[1])
       ];
-      var relative_value = this_.getRelativeValue_(
+      var relative_value = this.getRelativeValue_(
           feature.getProperty("data-value"));
 
       for (var i = 0; i < 3; i++) {
@@ -232,67 +230,67 @@ GeoChart.prototype.draw = function(data, options={}) {
       }
 
       style = Object.assign(style, {
-        fillColor: this_.getColorArrayStr_(fill_color_arr),
-        strokeColor: this_.getColorArrayStr_(stroke_color_arr)
+        fillColor: this.getColorArrayStr_(fill_color_arr),
+        strokeColor: this.getColorArrayStr_(stroke_color_arr)
       });
 
       // Selected feature style
       if (feature.getProperty("data-selected") === true) {
         style = Object.assign(
-            style, this_.options_.featuresHighlightedStyle,
+            style, this.options_.featuresHighlightedStyle,
             {zIndex: SELECTED_Z_INDEX}
         );
       }
     }
 
     return style;
-  });
+  }.bind(this));
 
   // Mouse event handlers
 
   this.map_.data.addListener("mouseover", function(event) {
     var highlighted_style = Object.assign(
-        {}, this_.options_.featuresHighlightedStyle,
+        {}, this.options_.featuresHighlightedStyle,
         {zIndex: HIGHLIGHTED_Z_INDEX});
 
-    if (event.feature !== this_.feature_selected_) {
-      this_.map_.data.revertStyle();
-      this_.map_.data.overrideStyle(event.feature, highlighted_style);
+    if (event.feature !== this.feature_selected_) {
+      this.map_.data.revertStyle();
+      this.map_.data.overrideStyle(event.feature, highlighted_style);
     }
     if (event.feature.getProperty("data-value") !== undefined) {
-      this_.color_axis_.drawIndicator(event.feature);
+      this.color_axis_.drawIndicator(event.feature);
     }
-  });
+  }.bind(this));
 
   this.map_.data.addListener("mouseout", function(event) {
-    if (event.feature !== this_.feature_selected_) {
-      this_.map_.data.revertStyle();
+    if (event.feature !== this.feature_selected_) {
+      this.map_.data.revertStyle();
     }
-    this_.tooltip_.undrawTooltip();
-    this_.color_axis_.undrawIndicator();
-  });
+    this.tooltip_.undrawTooltip();
+    this.color_axis_.undrawIndicator();
+  }.bind(this));
 
   this.map_.data.addListener("mousemove", function(event) {
     if (event.feature.getProperty("data-value") !== undefined) {
-      this_.tooltip_.drawTooltip(event.feature, event.latLng);
+      this.tooltip_.drawTooltip(event.feature, event.latLng);
     }
-  });
+  }.bind(this));
 
   this.map_.data.addListener("click", function(event) {
-    this_.map_.data.revertStyle();
-    if (event.feature !== this_.feature_selected_) {
+    this.map_.data.revertStyle();
+    if (event.feature !== this.feature_selected_) {
       if (event.feature.getProperty("data-value") !== undefined) {
-        this_.selectFeature_(event.feature);
+        this.selectFeature_(event.feature);
       } else {
-        this_.unselectFeature_();
+        this.unselectFeature_();
       }
     }
-  });
+  }.bind(this));
 
   this.map_.addListener("click", function(event) {
-    this_.map_.data.revertStyle();
-    this_.unselectFeature_();
-  });
+    this.map_.data.revertStyle();
+    this.unselectFeature_();
+  }.bind(this));
 
 };
 
