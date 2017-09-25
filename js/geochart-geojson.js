@@ -1,5 +1,7 @@
 // vim: set ts=2 sw=2 et colorcolumn=80 :
 
+"use strict";
+
 /**
  * Package "geochart_geojson"
  *
@@ -18,13 +20,13 @@ var geochart_geojson = {};
 // The selected (click) and highlighted (hover) features must have a zIndex
 // higher than the other features. The tooltip must have a zIndex higher than
 // the features and the selected and highlighted features.
-SELECTED_Z_INDEX = 999;
-HIGHLIGHTED_Z_INDEX = 1000;
-TOOLTIP_Z_INDEX = 2000;
+var SELECTED_Z_INDEX = 999;
+var HIGHLIGHTED_Z_INDEX = 1000;
+var TOOLTIP_Z_INDEX = 2000;
 // Color axis constants
-COLOR_AXIS_INDICATOR_SIZE = "12px";
-COLOR_AXIS_INDICATOR_TOP_OFFSET = -8;
-COLOR_AXIS_INDICATOR_LEFT_OFFSET = -6;
+var COLOR_AXIS_INDICATOR_SIZE = "12px";
+var COLOR_AXIS_INDICATOR_TOP_OFFSET = -8;
+var COLOR_AXIS_INDICATOR_LEFT_OFFSET = -6;
 
 
 /**
@@ -47,7 +49,7 @@ COLOR_AXIS_INDICATOR_LEFT_OFFSET = -6;
  *
  * - container: The HTML container for the chart.
  */
-GeoChart = function(container) {
+var GeoChart = function(container) {
   this.container = container;
 
   this.data_ = null;
@@ -378,7 +380,7 @@ context.GeoChart = GeoChart;
 // Params:
 //
 // - geoChart: The GeoChart GeoJSON object where the tooltip will be placed.
-Tooltip = function(geoChart) {
+var Tooltip = function(geoChart) {
   this.geo_chart_ = geoChart;
 
   this.div_ = null;
@@ -485,7 +487,7 @@ context.Tooltip = Tooltip;
 // Params:
 //
 // - geoChart: The GeoChart GeoJSON object where the color axis will be placed.
-ColorAxis = function(geoChart) {
+var ColorAxis = function(geoChart) {
   this.geo_chart_ = geoChart;
 
   this.div_ = null;
