@@ -80,14 +80,15 @@ GeoChart.prototype.DEFAULT_OPTIONS = {
     fillColor: "#f5f5f5",
     strokeColor: "#dddddd",
     fillOpacity: 1,
-    strokeWeight: 1
+    strokeWeight: 1,
+    strokeOpacity: 0.5
   },
   featuresHighlightedStyle: {
-    strokeWeight: 3,
+    strokeWeight: 2,
     strokeOpacity: 1
   },
   featuresGradientColors: ["#efe6dc", "#109618"],
-  featuresGradientStrokeColors: ["#d7cfc6", "0e8716"],
+  featuresGradientStrokeColors: ["#dddddd", "#999999"],
   tooltip: {
     borderStyle: "solid",
     borderWidth: "1px",
