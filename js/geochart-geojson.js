@@ -11,7 +11,9 @@ var geochart_geojson = {};
 
 (function(context) {
 
+
 "use strict";
+
 
 // Constants
 
@@ -22,10 +24,41 @@ var geochart_geojson = {};
 var SELECTED_Z_INDEX = 999;
 var HIGHLIGHTED_Z_INDEX = 1000;
 var TOOLTIP_Z_INDEX = 2000;
+// Tooltip constants
+var TOOLTIP_STYLE = {
+    borderStyle: "solid",
+    borderWidth: "1px",
+    borderColor: "#cccccc",
+    backgroundColor: "#ffffff",
+    padding: "4px"
+};
+var TOOLTIP_MARGIN = 2;
+var TOOLTIP_OFFSET = 12;
 // Color axis constants
-var COLOR_AXIS_INDICATOR_SIZE = "12px";
+var COLOR_AXIS_WIDTH = 250;
+var COLOR_AXIS_HEIGHT = 13;
+var COLOR_AXIS_INDICATOR_SIZE = 12;
 var COLOR_AXIS_INDICATOR_TOP_OFFSET = -8;
 var COLOR_AXIS_INDICATOR_LEFT_OFFSET = -6;
+
+
+// Auxiliary functions
+
+function processTextStyle_(textStyle) {
+  var style = {};
+
+  style.color = textStyle.color;
+  style.fontFamily = textStyle.fontName;
+  style.fontSize = textStyle.fontSize;
+  if (textStyle.bold) {
+    style.fontWeight = "bold";
+  }
+  if (textStyle.italic) {
+    style.fontStyle = "italic";
+  }
+
+  return style;
+}
 
 
 /**
@@ -73,49 +106,76 @@ var GeoChart = function(container) {
 // TODO Document each option.
 // TODO Use an API more similar to the original Google Charts.
 GeoChart.prototype.DEFAULT_OPTIONS = {
-  mapsOptions: null,
-  mapsBackground: "none",
-  mapsControl: false,
-  featuresStyle: {
-    fillColor: "#f5f5f5",
-    strokeColor: "#cccccc",
+  colorAxis: {
+    colors: ["#efe6dc", "#109618"],
+    strokeColors: ["#cccccc", "#888888"],
+  },
+  datalessRegionColor: "#f5f5f5",
+  datalessRegionStrokeColor: "#cccccc",
+  defaultColor: "#267114", // TODO Implement
+  defaultStrokeColor: "#666666", // TODO Implement
+  displayMode: "regions", // TODO Implement
+  featureStyle: {
     fillOpacity: 1,
     strokeWeight: 1,
     strokeOpacity: 0.5
   },
-  featuresHighlightedStyle: {
+  featureStyleHighlighted: {
     strokeWeight: 2,
     strokeOpacity: 1
   },
-  featuresGradientColors: ["#efe6dc", "#109618"],
-  featuresGradientStrokeColors: ["#cccccc", "#888888"],
+  geoJson: null,
+  geoJsonOptions: null,
+  // Set `legend` to `"none"` to disable the legend.
+  legend: { // TODO Implement
+    // A position string. Valid options are `ControlPosition` locations in the
+    // Google Maps API.
+    // See: https://developers.google.com/maps/documentation/javascript/ \
+    //     controls?hl=pt-br#ControlPositioning
+    position: "LEFT_BOTTOM",
+    textStyle: {
+      color: "#000000",
+      fontName: "Arial",
+      fontSize: 14,
+      bold: false,
+      italic: false
+    }
+  },
+  mapsOptions: null,
+  mapsBackground: "none", // TODO Implement
+  mapsControl: false, // TODO Implement
   tooltip: {
-    borderStyle: "solid",
-    borderWidth: "1px",
-    borderColor: "#cccccc",
-    backgroundColor: "#ffffff",
-    padding: "4px",
     textStyle: {
       color: "#000000",
-      fontFamily: "Arial",
+      fontName: "Arial",
       fontSize: "13px",
-      margin: "2px"
-    }
-  },
-  tooltipOffset: 12,
-  colorAxis: {
-    width: "250px",
-    height: "13px",
-    textStyle: {
-      color: "#000000",
-      fontFamily: "Arial",
-      fontSize: "14px"
-    }
-  },
-  colorAxisPosition: "LEFT_BOTTOM"
+      bold: false,
+      italic: false
+    },
+    trigger: "focus" // TODO Implement
+  }
 };
 
-// TODO Implement other `mapsBackground` and `mapsControl` options
+// TODO - IMPLEMENT!!!
+GeoChart.prototype.optionsMerge_ = function(options) {
+  var options_deep_copy = {};
+  var options_default = {};
+
+  options_default = Object.assign(
+    {}, context.GeoChart.prototype.DEFAULT_OPTIONS);
+
+  if ("colorAxis" in options) {
+    options_deep_copy.colorAxis = Object.assign(
+        {},
+        context.GeoChart.prototype.DEFAULT_OPTIONS.colorAxis,
+        options.colorAxis);
+    delete options.colorAxis;
+  }
+
+  options_deep_copy = Object.assign(
+      options_deep_copy, context.GeoChart.prototype.DEFAULT_OPTIONS, options);
+}
+
 GeoChart.prototype.getMapsOptions_ = function() {
   var maps_options = this.options_.mapsOptions;
 
@@ -148,9 +208,7 @@ GeoChart.prototype.getMapsOptions_ = function() {
  * - data: The data (a `google.visualization.DataTable` object with two
          columns);
  * - options: The chart visualization options (check the
-         `GeoChart.prototype.DEFAULT_OPTIONS` code for all options).
- *
- * TODO Document all the possible `options`.
+         `GeoChart.prototype.DEFAULT_OPTIONS` docs for all options).
  */
 GeoChart.prototype.draw = function(data, options={}) {
   this.data_ = data;
@@ -199,7 +257,7 @@ GeoChart.prototype.draw = function(data, options={}) {
         // Create the color axis
         this.color_axis_ = new ColorAxis(this);
         this.map_.controls[
-            google.maps.ControlPosition[this.options_.colorAxisPosition]].push(
+            google.maps.ControlPosition[this.options_.legend.position]].push(
                 this.color_axis_.getContainer());
 
         // Create the tooltip
@@ -216,8 +274,12 @@ GeoChart.prototype.draw = function(data, options={}) {
   this.map_.data.setStyle(function(feature) {
     // Default style
     var style = Object.assign(
-        {}, {cursor: "default"},
-        this.options_.featuresStyle);
+        {}, {
+          cursor: "default",
+          fillColor: this.options_.datalessRegionColor,
+          strokeColor: this.options_.datalessRegionStrokeColor
+        },
+        this.options_.featureStyle);
 
     // Feature with data style
     // Colorize the features with data (using the gradient colors)
@@ -226,12 +288,12 @@ GeoChart.prototype.draw = function(data, options={}) {
       var stroke_color_arr = [];
 
       var gradient_colors_arr = [
-          this.getColorArray_(this.options_.featuresGradientColors[0]),
-          this.getColorArray_(this.options_.featuresGradientColors[1])
+          this.getColorArray_(this.options_.colorAxis.colors[0]),
+          this.getColorArray_(this.options_.colorAxis.colors[1])
       ];
       var gradient_stroke_colors_arr = [
-          this.getColorArray_(this.options_.featuresGradientStrokeColors[0]),
-          this.getColorArray_(this.options_.featuresGradientStrokeColors[1])
+          this.getColorArray_(this.options_.colorAxis.strokeColors[0]),
+          this.getColorArray_(this.options_.colorAxis.strokeColors[1])
       ];
       var relative_value = this.getRelativeValue_(
           feature.getProperty("data-value"));
@@ -254,7 +316,7 @@ GeoChart.prototype.draw = function(data, options={}) {
       // Selected feature style
       if (feature.getProperty("data-selected") === true) {
         style = Object.assign(
-            style, this.options_.featuresHighlightedStyle,
+            style, this.options_.featureStyleHighlighted,
             {zIndex: SELECTED_Z_INDEX}
         );
       }
@@ -267,7 +329,7 @@ GeoChart.prototype.draw = function(data, options={}) {
 
   this.map_.data.addListener("mouseover", function(event) {
     var highlighted_style = Object.assign(
-        {}, this.options_.featuresHighlightedStyle,
+        {}, this.options_.featureStyleHighlighted,
         {zIndex: HIGHLIGHTED_Z_INDEX});
 
     if (event.feature !== this.feature_selected_) {
@@ -416,12 +478,13 @@ Tooltip.prototype.onAdd = function() {
   var div_style = {};
   div_style = Object.assign(
       {}, {position: "absolute", visibility: "hidden"},
-      this.geo_chart_.options_.tooltip,
+      TOOLTIP_STYLE,
       {zIndex: TOOLTIP_Z_INDEX});
-  delete div_style.textStyle;
   Object.assign(div.style, div_style);
 
-  var p_style = Object.assign({}, this.geo_chart_.options_.tooltip.textStyle);
+  var p_style = Object.assign(
+      {}, {margin: TOOLTIP_MARGIN + "px"},
+      processTextStyle_(this.geo_chart_.options_.tooltip.textStyle));
 
   // Create the first inner paragraph
   var p1 = document.createElement("p");
@@ -465,7 +528,7 @@ Tooltip.prototype.drawTooltip = function(feature, latLng) {
   }
 
   // Set positioning
-  var s = this.geo_chart_.options_.tooltipOffset;
+  var s = TOOLTIP_OFFSET;
   var px = this.getProjection().fromLatLngToDivPixel(latLng);
   var w = this.div_.offsetWidth;
   var h = this.div_.offsetHeight;
@@ -518,7 +581,7 @@ ColorAxis.prototype.draw_ = function() {
   Object.assign(
       div_inner.style,
       {marginTop: - COLOR_AXIS_INDICATOR_TOP_OFFSET + "px"},
-      this.geo_chart_.options_.colorAxis.textStyle);
+      processTextStyle_(this.geo_chart_.options_.legend.textStyle));
 
   var min_div =  document.createElement("div");
   min_div.style.padding = "4px";
@@ -533,8 +596,8 @@ ColorAxis.prototype.draw_ = function() {
   axis_div.style.padding = "0";
   axis_div.style.margin = "0";
   var axis_div_inner = document.createElement("div");
-  axis_div_inner.style.width = this.geo_chart_.options_.colorAxis.width;
-  axis_div_inner.style.height = this.geo_chart_.options_.colorAxis.height;
+  axis_div_inner.style.width = COLOR_AXIS_WIDTH + "px";
+  axis_div_inner.style.height = COLOR_AXIS_HEIGHT + "px";
   axis_div_inner.style.padding = "0";
   axis_div_inner.style.margin = "0";
   // See: https://stackoverflow.com/a/16219600
@@ -543,7 +606,7 @@ ColorAxis.prototype.draw_ = function() {
       axis_div_inner.getAttribute("style") + "; " + this.getGradientStr_());
   axis_div.appendChild(axis_div_inner);
   var indicator_span = document.createElement("span");
-  indicator_span.style.fontSize = COLOR_AXIS_INDICATOR_SIZE;
+  indicator_span.style.fontSize = COLOR_AXIS_INDICATOR_SIZE + "px";
   indicator_span.style.top = COLOR_AXIS_INDICATOR_TOP_OFFSET;
   indicator_span.style.position = "absolute";
   indicator_span.style.visibility = "hidden";
@@ -574,9 +637,9 @@ ColorAxis.prototype.getGradientStr_ = function() {
 
   var gradient_colors_arr = [
       this.geo_chart_.getColorArray_(
-          this.geo_chart_.options_.featuresGradientColors[0]),
+          this.geo_chart_.options_.colorAxis.colors[0]),
       this.geo_chart_.getColorArray_(
-          this.geo_chart_.options_.featuresGradientColors[1])
+          this.geo_chart_.options_.colorAxis.colors[1])
   ];
   var gradient_colors_str = [
     this.geo_chart_.getColorArrayStr_(gradient_colors_arr[0]),
@@ -596,7 +659,7 @@ ColorAxis.prototype.getContainer = function() {
 ColorAxis.prototype.drawIndicator = function(feature) {
   var relative_value = this.geo_chart_.getRelativeValue_(
       feature.getProperty("data-value"));
-  var width = parseInt(this.geo_chart_.options_.colorAxis.width, 10);
+  var width = COLOR_AXIS_WIDTH;
   this.indicator_span_.style.left =
       (relative_value * width + COLOR_AXIS_INDICATOR_LEFT_OFFSET) + "px";
   this.indicator_span_.style.visibility = "visible";
