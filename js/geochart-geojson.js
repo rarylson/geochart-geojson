@@ -505,7 +505,9 @@ ColorAxis.prototype.draw_ = function() {
 
   var div_inner = document.createElement('div');
   Object.assign(
-      div_inner.style, this.geo_chart_.options_.colorAxis.textStyle);
+      div_inner.style,
+      {marginTop: - COLOR_AXIS_INDICATOR_TOP_OFFSET + "px"},
+      this.geo_chart_.options_.colorAxis.textStyle);
 
   var min_div =  document.createElement('div');
   min_div.style.padding = "4px";
