@@ -140,11 +140,23 @@ GeoChart.prototype.getMapsOptions_ = function() {
   return maps_options;
 };
 
+/**
+ * Draw the chart
+ *
+ * Params:
+ *
+ * - data: The data (a `google.visualization.DataTable` object with two
+         columns);
+ * - options: The chart visualization options (check the
+         `GeoChart.prototype.DEFAULT_OPTIONS` code for all options).
+ *
+ * TODO Document all the possible `options`.
+ */
 GeoChart.prototype.draw = function(data, options={}) {
   this.data_ = data;
   // FIXME This doesn't run a deep copy.
   // See: https://stackoverflow.com/questions/27936772/how-to-deep-merge-
-  //          instead-of-shallow-merge
+  //     instead-of-shallow-merge
   this.options_ = Object.assign(
       {}, context.GeoChart.prototype.DEFAULT_OPTIONS, options);
 
@@ -153,7 +165,7 @@ GeoChart.prototype.draw = function(data, options={}) {
   // TODO We could implement custom zooming when mapsBackground = "none" using
   // custom projections.
   // See: https://groups.google.com/forum/#!topic/google-maps-js-api-
-  //          v3/AbOHZlLQLCg
+  //     v3/AbOHZlLQLCg
   this.map_ = new google.maps.Map(this.container, maps_options);
 
   // Load the GeoJSON data
@@ -195,7 +207,7 @@ GeoChart.prototype.draw = function(data, options={}) {
 
         // Trigger the ready event
         // See: https://developers.google.com/chart/interactive/docs/dev/
-        //          events#the-ready-event
+        //     events#the-ready-event
         google.visualization.events.trigger(this, "ready", null);
       }.bind(this)
   );
@@ -300,7 +312,7 @@ GeoChart.prototype.draw = function(data, options={}) {
 };
 
 // Based on: https://stackoverflow.com/questions/5623838/rgb-to-hex-and-hex-
-//              to-rgb
+//     to-rgb
 GeoChart.prototype.getColorArray_ = function(color) {
   var short_regex = /^#?([\da-f])([\da-f])([\da-f])$/i;
   var regex = /^#?([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i;
@@ -334,7 +346,7 @@ GeoChart.prototype.getRelativeValue_ = function(value) {
 
 // Entry selected by the user
 // See: https://developers.google.com/chart/interactive/docs/reference
-//          #getselection
+//     #getselection
 GeoChart.prototype.getSelection = function() {
   if (! this.feature_selected_) {
     return [];
