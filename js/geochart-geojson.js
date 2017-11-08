@@ -500,27 +500,27 @@ var ColorAxis = function(geoChart) {
 };
 
 ColorAxis.prototype.draw_ = function() {
-  var div = document.createElement('div');
+  var div = document.createElement("div");
 
-  var div_inner = document.createElement('div');
+  var div_inner = document.createElement("div");
   Object.assign(
       div_inner.style,
       {marginTop: - COLOR_AXIS_INDICATOR_TOP_OFFSET + "px"},
       this.geo_chart_.options_.colorAxis.textStyle);
 
-  var min_div =  document.createElement('div');
+  var min_div =  document.createElement("div");
   min_div.style.padding = "4px";
   min_div.style.display = "table-cell";
   min_div.innerText = this.geo_chart_.min_;
   div_inner.appendChild(min_div);
 
-  var axis_div = document.createElement('div');
+  var axis_div = document.createElement("div");
   axis_div.style.display = "table-cell";
   axis_div.style.verticalAlign = "middle";
   axis_div.style.position = "relative";
   axis_div.style.padding = "0";
   axis_div.style.margin = "0";
-  var axis_div_inner = document.createElement('div');
+  var axis_div_inner = document.createElement("div");
   axis_div_inner.style.width = this.geo_chart_.options_.colorAxis.width;
   axis_div_inner.style.height = this.geo_chart_.options_.colorAxis.height;
   axis_div_inner.style.padding = "0";
@@ -530,7 +530,7 @@ ColorAxis.prototype.draw_ = function() {
       "style",
       axis_div_inner.getAttribute("style") + "; " + this.getGradientStr_());
   axis_div.appendChild(axis_div_inner);
-  var indicator_span = document.createElement('span');
+  var indicator_span = document.createElement("span");
   indicator_span.style.fontSize = COLOR_AXIS_INDICATOR_SIZE;
   indicator_span.style.top = COLOR_AXIS_INDICATOR_TOP_OFFSET;
   indicator_span.style.position = "absolute";
@@ -539,7 +539,7 @@ ColorAxis.prototype.draw_ = function() {
   axis_div.appendChild(indicator_span);
   div_inner.appendChild(axis_div);
 
-  var max_div =  document.createElement('div');
+  var max_div =  document.createElement("div");
   max_div.style.padding = "4px";
   max_div.style.display = "table-cell";
   max_div.innerText = this.geo_chart_.max_;
