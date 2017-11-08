@@ -72,6 +72,7 @@ var GeoChart = function(container) {
 
 // Default GeoChart options
 // TODO Document each option.
+// TODO Use an API more similar to the original Google Charts.
 GeoChart.prototype.DEFAULT_OPTIONS = {
   mapsOptions: null,
   mapsBackground: "none",
@@ -111,7 +112,8 @@ GeoChart.prototype.DEFAULT_OPTIONS = {
       fontFamily: "Arial",
       fontSize: "14px"
     }
-  }
+  },
+  colorAxisPosition: "LEFT_BOTTOM"
 };
 
 // TODO Implement other `mapsBackground` and `mapsControl` options
@@ -185,8 +187,9 @@ GeoChart.prototype.draw = function(data, options={}) {
 
         // Create the color axis
         this.color_axis_ = new ColorAxis(this);
-        this.map_.controls[google.maps.ControlPosition.LEFT_BOTTOM].push(
-            this.color_axis_.getContainer());
+        this.map_.controls[
+            google.maps.ControlPosition[this.options_.colorAxisPosition]].push(
+                this.color_axis_.getContainer());
 
         // Create the tooltip
         this.tooltip_ = new Tooltip(this);
