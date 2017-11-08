@@ -1,7 +1,5 @@
 // vim: set ts=2 sw=2 et colorcolumn=80 :
 
-"use strict";
-
 /**
  * Package "geochart_geojson"
  *
@@ -13,6 +11,7 @@ var geochart_geojson = {};
 
 (function(context) {
 
+"use strict";
 
 // Constants
 
@@ -121,19 +120,19 @@ GeoChart.prototype.getMapsOptions_ = function() {
   var maps_options = this.options_.mapsOptions;
 
   if (this.options_.mapsBackground === "none") {
-    maps_options["styles"] = [{
+    maps_options.styles = [{
       "stylers": [{"visibility": "off"}]
     }];
-    maps_options["backgroundColor"] = "none";
+    maps_options.backgroundColor = "none";
   } else {
     throw new Error("Invalid `mapsBackground` option");
   }
 
   if (this.options_.mapsControl === false) {
-    maps_options["disableDefaultUI"] = true;
-    maps_options["scrollwheel"] = false;
-    maps_options["draggable"] = false;
-    maps_options["disableDoubleClickZoom"] = true;
+    maps_options.disableDefaultUI = true;
+    maps_options.scrollwheel = false;
+    maps_options.draggable = false;
+    maps_options.disableDoubleClickZoom = true;
   } else {
     throw new Error("Invalid `mapsControl` option");
   }
