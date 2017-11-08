@@ -79,7 +79,7 @@ GeoChart.prototype.DEFAULT_OPTIONS = {
   mapsControl: false,
   featuresStyle: {
     fillColor: "#f5f5f5",
-    strokeColor: "#dddddd",
+    strokeColor: "#cccccc",
     fillOpacity: 1,
     strokeWeight: 1,
     strokeOpacity: 0.5
@@ -89,7 +89,7 @@ GeoChart.prototype.DEFAULT_OPTIONS = {
     strokeOpacity: 1
   },
   featuresGradientColors: ["#efe6dc", "#109618"],
-  featuresGradientStrokeColors: ["#dddddd", "#999999"],
+  featuresGradientStrokeColors: ["#cccccc", "#888888"],
   tooltip: {
     borderStyle: "solid",
     borderWidth: "1px",
