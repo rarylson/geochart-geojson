@@ -60,6 +60,19 @@ function processTextStyle_(textStyle) {
   return style;
 }
 
+function deepMerge_(obj1, obj2) {
+  Object.entries(obj2).forEach(function(p) {
+    if (p[0] in obj1 && typeof obj1[p[0]] === "object" &&
+        obj1[p[0]] !== null && typeof p[1] === "object") {
+      deepMerge_(obj1[p[0]], p[1]);
+    } else {
+      obj1[p[0]] = p[1];
+    }
+  });
+
+  return obj1;
+}
+
 
 /**
  * GeoChart with GeoJSON support
@@ -156,26 +169,6 @@ GeoChart.prototype.DEFAULT_OPTIONS = {
   }
 };
 
-// TODO - IMPLEMENT!!!
-GeoChart.prototype.optionsMerge_ = function(options) {
-  var options_deep_copy = {};
-  var options_default = {};
-
-  options_default = Object.assign(
-    {}, context.GeoChart.prototype.DEFAULT_OPTIONS);
-
-  if ("colorAxis" in options) {
-    options_deep_copy.colorAxis = Object.assign(
-        {},
-        context.GeoChart.prototype.DEFAULT_OPTIONS.colorAxis,
-        options.colorAxis);
-    delete options.colorAxis;
-  }
-
-  options_deep_copy = Object.assign(
-      options_deep_copy, context.GeoChart.prototype.DEFAULT_OPTIONS, options);
-}
-
 GeoChart.prototype.getMapsOptions_ = function() {
   var maps_options = this.options_.mapsOptions;
 
@@ -212,11 +205,8 @@ GeoChart.prototype.getMapsOptions_ = function() {
  */
 GeoChart.prototype.draw = function(data, options={}) {
   this.data_ = data;
-  // FIXME This doesn't run a deep copy.
-  // See: https://stackoverflow.com/questions/27936772/how-to-deep-merge-
-  //     instead-of-shallow-merge
-  this.options_ = Object.assign(
-      {}, context.GeoChart.prototype.DEFAULT_OPTIONS, options);
+  this.options_ = deepMerge_(
+      context.GeoChart.prototype.DEFAULT_OPTIONS, options);
 
   // Create the Google Maps object
   var maps_options = this.getMapsOptions_();
