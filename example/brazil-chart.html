@@ -4,7 +4,7 @@ vim: set ts=2 sw=2 et :
 <html>
   <head>
     <meta charset="utf-8">
-    <title>Geochart GeoJSON - Rio (State) example page</title>
+    <title>Geochart GeoJSON - Brazil example page</title>
 
     <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
     <!--
@@ -26,11 +26,33 @@ vim: set ts=2 sw=2 et :
         data.addColumn("string", "State");
         data.addColumn("number", "Value");
         data.addRows([
-          ["Rio de Janeiro", 10],
-          ["Maricá", 5],
-          ["São João de Meriti", 2],
-          ["Niterói", 1],
-          ["São Gonçalo", 1]
+          ["São Paulo", 336],
+          ["Rio de Janeiro", 78],
+          ["Paraná", 69],
+          ["Minas Gerais", 67],
+          ["Rio Grande do Sul", 55],
+          ["Santa Catarina", 50],
+          ["Ceará", 25],
+          ["Pernambuco", 22],
+          ["Distrito Federal", 20],
+          ["Bahia", 19],
+          ["Goiás", 15],
+          ["Espírito Santo", 11],
+          ["Alagoas", 7],
+          ["Maranhão", 7],
+          ["Paraíba", 7],
+          ["Rio Grande do Norte", 6],
+          ["Mato Grosso", 5],
+          ["Sergipe", 5],
+          ["Amazonas", 3],
+          ["Acre", 2],
+          ["Mato Grosso do Sul", 2],
+          ["Pará", 2],
+          ["Piauí", 2],
+          ["Amapá", 1],
+          ["Rondônia", 1],
+          ["Roraima", 1],
+          ["Tocantins", 1]
         ]);
 
         // Instantiate our Geochart GeoJSON object
@@ -39,25 +61,22 @@ vim: set ts=2 sw=2 et :
         // Set Geochart GeoJSON options
         var options = {
           mapsOptions: {
-            center: {lat: -22.15, lng: -42.9},
-            zoom: 8
+            center: {lat: -16, lng: -53},
+            zoom: 4
           },
-          geoJson: "rio-state.geo.json",
+          geoJson: "brazil.geo.json",
           geoJsonOptions: {
             idPropertyName: "name"
-          }
+          },
+          colorAxis: {colors: ["#fafdff", "#3366cc"]},
+          legend: {position: "RIGHT_TOP"}
         };
 
-        // Draw our Geochart GeoJSON with the data we created locally
-        // And set a selection also.
-        google.visualization.events.addListener(vis, "ready", function() {
-          vis.setSelection([{row: 0, column: null}]);
-        });
         vis.draw(data, options);
       }
     </script>
   </head>
   <body>
-    <div id="mydiv" style="width: 900; height: 560;"></div>
+    <div id="mydiv" style="width: 600; height: 560;"></div>
   </body>
 </html>
