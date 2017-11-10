@@ -1,6 +1,11 @@
 Changelog
 =========
 
+1.1.0
+-----
+
+- Providing a bundled and a minified version (`build`).
+
 1.0.0
 -----
 
