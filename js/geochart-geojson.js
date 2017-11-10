@@ -117,7 +117,6 @@ var GeoChart = function(container) {
 
 // Default GeoChart options
 // TODO Document each option.
-// TODO Use an API more similar to the original Google Charts.
 GeoChart.prototype.DEFAULT_OPTIONS = {
   colorAxis: {
     colors: ["#efe6dc", "#109618"],
