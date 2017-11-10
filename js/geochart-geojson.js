@@ -49,7 +49,7 @@ function processTextStyle_(textStyle) {
 
   style.color = textStyle.color;
   style.fontFamily = textStyle.fontName;
-  style.fontSize = textStyle.fontSize;
+  style.fontSize = textStyle.fontSize + "px";
   if (textStyle.bold) {
     style.fontWeight = "bold";
   }
@@ -160,7 +160,7 @@ GeoChart.prototype.DEFAULT_OPTIONS = {
     textStyle: {
       color: "#000000",
       fontName: "Arial",
-      fontSize: "13px",
+      fontSize: 13,
       bold: false,
       italic: false
     },
@@ -533,8 +533,8 @@ Tooltip.prototype.drawTooltip = function(feature, latLng) {
   if (left < 0) {
     left = px.x + s;
   }
-  this.div_.style.top = top;
-  this.div_.style.left = left;
+  this.div_.style.top = top + "px";
+  this.div_.style.left = left + "px";
 
   // Show
   this.div_.style.visibility = "visible";
@@ -596,7 +596,7 @@ ColorAxis.prototype.draw_ = function() {
   axis_div.appendChild(axis_div_inner);
   var indicator_span = document.createElement("span");
   indicator_span.style.fontSize = COLOR_AXIS_INDICATOR_SIZE + "px";
-  indicator_span.style.top = COLOR_AXIS_INDICATOR_TOP_OFFSET;
+  indicator_span.style.top = COLOR_AXIS_INDICATOR_TOP_OFFSET + "px";
   indicator_span.style.position = "absolute";
   indicator_span.style.visibility = "hidden";
   indicator_span.innerText = "▼";

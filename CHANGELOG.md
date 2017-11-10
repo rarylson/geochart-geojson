@@ -1,6 +1,11 @@
 Changelog
 =========
 
+1.1.1
+-----
+
+- **Fix:** Works when using standard mode (`<!DOCTYPE html>`).
+
 1.1.0
 -----
 
