@@ -51,7 +51,7 @@ var geochart_geojson = {};
 
     style.color = textStyle.color;
     style.fontFamily = textStyle.fontName;
-    style.fontSize = textStyle.fontSize;
+    style.fontSize = textStyle.fontSize + "px";
     if (textStyle.bold) {
       style.fontWeight = "bold";
     }
@@ -117,7 +117,6 @@ var geochart_geojson = {};
 
   // Default GeoChart options
   // TODO Document each option.
-  // TODO Use an API more similar to the original Google Charts.
   GeoChart.prototype.DEFAULT_OPTIONS = {
     colorAxis: {
       colors: ["#efe6dc", "#109618"],
@@ -161,7 +160,7 @@ var geochart_geojson = {};
       textStyle: {
         color: "#000000",
         fontName: "Arial",
-        fontSize: "13px",
+        fontSize: 13,
         bold: false,
         italic: false
       },
@@ -499,8 +498,8 @@ var geochart_geojson = {};
     if (left < 0) {
       left = px.x + s;
     }
-    this.div_.style.top = top;
-    this.div_.style.left = left;
+    this.div_.style.top = top + "px";
+    this.div_.style.left = left + "px";
 
     // Show
     this.div_.style.visibility = "visible";
@@ -556,7 +555,7 @@ var geochart_geojson = {};
     axis_div.appendChild(axis_div_inner);
     var indicator_span = document.createElement("span");
     indicator_span.style.fontSize = COLOR_AXIS_INDICATOR_SIZE + "px";
-    indicator_span.style.top = COLOR_AXIS_INDICATOR_TOP_OFFSET;
+    indicator_span.style.top = COLOR_AXIS_INDICATOR_TOP_OFFSET + "px";
     indicator_span.style.position = "absolute";
     indicator_span.style.visibility = "hidden";
     indicator_span.innerText = "▼";
