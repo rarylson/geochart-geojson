@@ -1,7 +1,8 @@
 {
   "name": "geochart-geojson",
-  "version": "1.0.0",
+  "title": "Geochart GeoJSON",
   "description": "Create charts very similar to the Google Charts geochart, but with GeoJSON support.",
+  "version": "1.0.0",
   "main": "js/geochart-geojson.js",
   "repository": {
     "type": "git",
