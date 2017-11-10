@@ -1,7 +1,8 @@
 {
   "name": "geochart-geojson",
-  "version": "1.0.0",
+  "title": "Geochart GeoJSON",
   "description": "Create charts very similar to the Google Charts geochart, but with GeoJSON support.",
+  "version": "1.0.0",
   "main": "js/geochart-geojson.js",
   "repository": {
     "type": "git",
@@ -19,14 +20,16 @@
   "homepage": "https://github.com/rarylson/geochart-geojson#readme",
   "scripts": {
     "start": "http-server -a localhost -p 8080",
-    "babel": "babel --presets env js/geochart-geojson.js -o build/geochart-geojson.bundle.js",
-    "jshint": "jshint js/geochart-geojson.js"
+    "jshint": "jshint js/geochart-geojson.js",
+    "babel": "babel --presets env js/geochart-geojson.js -o build/geochart-geojson.js",
+    "uglify": "uglifyjs build/geochart-geojson.js --compress --mangle --output build/geochart-geojson.min.js"
   },
   "devDependencies": {
     "babel-cli": "^6.26.0",
     "babel-polyfill": "^6.26.0",
     "babel-preset-env": "^1.6.0",
     "http-server": "^0.10.0",
-    "jshint": "^2.9.5"
+    "jshint": "^2.9.5",
+    "uglify-js": "^3.1.8"
   }
 }
