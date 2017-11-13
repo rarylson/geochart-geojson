@@ -34,12 +34,12 @@ var TOOLTIP_STYLE = {
 };
 var TOOLTIP_MARGIN = 2;
 var TOOLTIP_OFFSET = 12;
-// Color axis constants
-var COLOR_AXIS_WIDTH = 250;
-var COLOR_AXIS_HEIGHT = 13;
-var COLOR_AXIS_INDICATOR_SIZE = 12;
-var COLOR_AXIS_INDICATOR_TOP_OFFSET = -8;
-var COLOR_AXIS_INDICATOR_LEFT_OFFSET = -6;
+// Legend constants
+var LEGEND_WIDTH = 250;
+var LEGEND_HEIGHT = 13;
+var LEGEND_INDICATOR_SIZE = 12;
+var LEGEND_INDICATOR_TOP_OFFSET = -8;
+var LEGEND_INDICATOR_LEFT_OFFSET = -6;
 
 
 // Auxiliary functions
@@ -107,7 +107,7 @@ var GeoChart = function(container) {
   // disabled by default.
   this.maps_map_ = null;
   this.tooltip_ = null;
-  this.color_axis_ = null;
+  this.legend_ = null;
   // Min and max values of the DataTable rows
   this.min_ = 0;
   this.max_ = 0;
@@ -243,11 +243,11 @@ GeoChart.prototype.draw = function(data, options={}) {
         this.min_ = min;
         this.max_ = max;
 
-        // Create the color axis
-        this.color_axis_ = new ColorAxis(this);
+        // Create the legend
+        this.legend_ = new Legend(this);
         this.map_.controls[
             google.maps.ControlPosition[this.options_.legend.position]].push(
-                this.color_axis_.getContainer());
+                this.legend_.getContainer());
 
         // Create the tooltip
         this.tooltip_ = new Tooltip(this);
@@ -326,7 +326,7 @@ GeoChart.prototype.draw = function(data, options={}) {
       this.map_.data.overrideStyle(event.feature, highlighted_style);
     }
     if (event.feature.getProperty("data-value") !== undefined) {
-      this.color_axis_.drawIndicator(event.feature);
+      this.legend_.drawIndicator(event.feature);
     }
   }.bind(this));
 
@@ -335,7 +335,7 @@ GeoChart.prototype.draw = function(data, options={}) {
       this.map_.data.revertStyle();
     }
     this.tooltip_.undrawTooltip();
-    this.color_axis_.undrawIndicator();
+    this.legend_.undrawIndicator();
   }.bind(this));
 
   this.map_.data.addListener("mousemove", function(event) {
@@ -437,6 +437,16 @@ GeoChart.prototype.unselectFeature_ = function() {
 };
 
 context.GeoChart = GeoChart;
+
+
+// ColorAxis for GeoChart GeoJSON
+//
+// It's an abstraction that implements the color processment needed to color
+// the features and the legend.
+//
+// Params:
+//
+// - geoChart: The GeoChart GeoJSON object where this color axis belong to.
 
 
 // Tooltip for GeoChart GeoJSON
@@ -547,14 +557,14 @@ Tooltip.prototype.undrawTooltip = function() {
 context.Tooltip = Tooltip;
 
 
-// Color axis for GeoChart GeoJSON
+// Legend for GeoChart GeoJSON
 //
 // It's a control to be placed on a Google Maps map.
 //
 // Params:
 //
-// - geoChart: The GeoChart GeoJSON object where the color axis will be placed.
-var ColorAxis = function(geoChart) {
+// - geoChart: The GeoChart GeoJSON object where the legend will be placed.
+var Legend = function(geoChart) {
   this.geo_chart_ = geoChart;
 
   this.div_ = null;
@@ -563,13 +573,13 @@ var ColorAxis = function(geoChart) {
   this.draw_();
 };
 
-ColorAxis.prototype.draw_ = function() {
+Legend.prototype.draw_ = function() {
   var div = document.createElement("div");
 
   var div_inner = document.createElement("div");
   Object.assign(
       div_inner.style,
-      {marginTop: - COLOR_AXIS_INDICATOR_TOP_OFFSET + "px"},
+      {marginTop: - LEGEND_INDICATOR_TOP_OFFSET + "px"},
       processTextStyle_(this.geo_chart_.options_.legend.textStyle));
 
   var min_div =  document.createElement("div");
@@ -578,30 +588,30 @@ ColorAxis.prototype.draw_ = function() {
   min_div.innerText = this.geo_chart_.min_;
   div_inner.appendChild(min_div);
 
-  var axis_div = document.createElement("div");
-  axis_div.style.display = "table-cell";
-  axis_div.style.verticalAlign = "middle";
-  axis_div.style.position = "relative";
-  axis_div.style.padding = "0";
-  axis_div.style.margin = "0";
-  var axis_div_inner = document.createElement("div");
-  axis_div_inner.style.width = COLOR_AXIS_WIDTH + "px";
-  axis_div_inner.style.height = COLOR_AXIS_HEIGHT + "px";
-  axis_div_inner.style.padding = "0";
-  axis_div_inner.style.margin = "0";
+  var legend_div = document.createElement("div");
+  legend_div.style.display = "table-cell";
+  legend_div.style.verticalAlign = "middle";
+  legend_div.style.position = "relative";
+  legend_div.style.padding = "0";
+  legend_div.style.margin = "0";
+  var legend_div_inner = document.createElement("div");
+  legend_div_inner.style.width = LEGEND_WIDTH + "px";
+  legend_div_inner.style.height = LEGEND_HEIGHT + "px";
+  legend_div_inner.style.padding = "0";
+  legend_div_inner.style.margin = "0";
   // See: https://stackoverflow.com/a/16219600
-  axis_div_inner.setAttribute(
+  legend_div_inner.setAttribute(
       "style",
-      axis_div_inner.getAttribute("style") + "; " + this.getGradientStr_());
-  axis_div.appendChild(axis_div_inner);
+      legend_div_inner.getAttribute("style") + "; " + this.getGradientStr_());
+  legend_div.appendChild(legend_div_inner);
   var indicator_span = document.createElement("span");
-  indicator_span.style.fontSize = COLOR_AXIS_INDICATOR_SIZE + "px";
-  indicator_span.style.top = COLOR_AXIS_INDICATOR_TOP_OFFSET + "px";
+  indicator_span.style.fontSize = LEGEND_INDICATOR_SIZE + "px";
+  indicator_span.style.top = LEGEND_INDICATOR_TOP_OFFSET + "px";
   indicator_span.style.position = "absolute";
   indicator_span.style.visibility = "hidden";
   indicator_span.innerText = "▼";
-  axis_div.appendChild(indicator_span);
-  div_inner.appendChild(axis_div);
+  legend_div.appendChild(indicator_span);
+  div_inner.appendChild(legend_div);
 
   var max_div =  document.createElement("div");
   max_div.style.padding = "4px";
@@ -616,7 +626,7 @@ ColorAxis.prototype.draw_ = function() {
 
 // Set the background gradient string
 // See: https://stackoverflow.com/a/16219600
-ColorAxis.prototype.getGradientStr_ = function() {
+Legend.prototype.getGradientStr_ = function() {
   var gradient_string =
       "background-image: -o-linear-gradient(left, {c1}, {c2}); " +
       "background-image: -moz-linear-gradient(left, {c1}, {c2}); " +
@@ -641,24 +651,24 @@ ColorAxis.prototype.getGradientStr_ = function() {
   return gradient_string;
 };
 
-ColorAxis.prototype.getContainer = function() {
+Legend.prototype.getContainer = function() {
   return this.div_;
 };
 
-ColorAxis.prototype.drawIndicator = function(feature) {
+Legend.prototype.drawIndicator = function(feature) {
   var relative_value = this.geo_chart_.getRelativeValue_(
       feature.getProperty("data-value"));
-  var width = COLOR_AXIS_WIDTH;
+  var width = LEGEND_WIDTH;
   this.indicator_span_.style.left =
-      (relative_value * width + COLOR_AXIS_INDICATOR_LEFT_OFFSET) + "px";
+      (relative_value * width + LEGEND_INDICATOR_LEFT_OFFSET) + "px";
   this.indicator_span_.style.visibility = "visible";
 };
 
-ColorAxis.prototype.undrawIndicator = function() {
+Legend.prototype.undrawIndicator = function() {
   this.indicator_span_.style.visibility = "hidden";
 };
 
-context.ColorAxis = ColorAxis;
+context.Legend = Legend;
 
 
 })(geochart_geojson);
