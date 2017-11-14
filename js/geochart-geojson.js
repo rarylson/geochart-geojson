@@ -105,7 +105,7 @@ var GeoChart = function(container) {
   // Optionally, it will also handle the underlying map layer (map, satellite
   // or simple map) and the map control (zoom, map drag). These features are
   // disabled by default.
-  this.maps_map_ = null;
+  this.map_ = null;
   this.tooltip_ = null;
   this.legend_ = null;
   // Min and max values of the DataTable rows
@@ -180,7 +180,7 @@ GeoChart.prototype.getMapsOptions_ = function() {
     throw new Error("Invalid `mapsBackground` option");
   }
 
-  if (this.options_.mapsControl === false) {
+  if (! this.options_.mapsControl) {
     maps_options.disableDefaultUI = true;
     maps_options.scrollwheel = false;
     maps_options.draggable = false;
@@ -303,7 +303,7 @@ GeoChart.prototype.draw = function(data, options={}) {
       });
 
       // Selected feature style
-      if (feature.getProperty("data-selected") === true) {
+      if (feature.getProperty("data-selected")) {
         style = Object.assign(
             style, this.options_.featureStyleHighlighted,
             {zIndex: SELECTED_Z_INDEX}
@@ -466,7 +466,7 @@ var Tooltip = function(geoChart) {
 
   this.LatLng = null;
 
-  this.setMap(geoChart.map_);
+  this.setMap(this.geo_chart_.map_);
 };
 
 Tooltip.prototype = new google.maps.OverlayView();
