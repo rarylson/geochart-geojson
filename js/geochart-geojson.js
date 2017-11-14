@@ -37,6 +37,8 @@ var TOOLTIP_OFFSET = 12;
 // Legend constants
 var LEGEND_WIDTH = 250;
 var LEGEND_HEIGHT = 13;
+var LEGEND_NUM_PADDING_VERT = 2;
+var LEGEND_NUM_PADDING_HORIZ = 4;
 var LEGEND_INDICATOR_SIZE = 12;
 var LEGEND_INDICATOR_TOP_OFFSET = -8;
 var LEGEND_INDICATOR_LEFT_OFFSET = -6;
@@ -583,7 +585,8 @@ Legend.prototype.draw_ = function() {
       processTextStyle_(this.geo_chart_.options_.legend.textStyle));
 
   var min_div =  document.createElement("div");
-  min_div.style.padding = "4px";
+  min_div.style.padding =
+      LEGEND_NUM_PADDING_VERT + "px " + LEGEND_NUM_PADDING_HORIZ + "px";
   min_div.style.display = "table-cell";
   min_div.innerText = this.geo_chart_.min_;
   div_inner.appendChild(min_div);
@@ -614,7 +617,8 @@ Legend.prototype.draw_ = function() {
   div_inner.appendChild(legend_div);
 
   var max_div =  document.createElement("div");
-  max_div.style.padding = "4px";
+  max_div.style.padding =
+      LEGEND_NUM_PADDING_VERT + "px " + LEGEND_NUM_PADDING_HORIZ + "px";
   max_div.style.display = "table-cell";
   max_div.innerText = this.geo_chart_.max_;
   div_inner.appendChild(max_div);
