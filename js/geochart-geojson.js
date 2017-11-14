@@ -412,6 +412,8 @@ context.GeoChart = GeoChart;
 var ColorAxis = function(geoChart) {
   this.geo_chart_ = geoChart;
 
+  this.single_value = false;
+
   this.colors_ = [];
   this.stroke_colors_ = [];
   this.canvas_context_ = null;
@@ -531,6 +533,15 @@ ColorAxis.prototype.initColors_ = function() {
     this.toRgbArray(color_axis_options_.strokeColors[0]),
     this.toRgbArray(color_axis_options_.strokeColors[1])
   ];
+
+  // Single value case
+  // In this case, use a single color (the color of the max value).
+  if (this.geo_chart_.min_ === this.geo_chart_.max_) {
+    this.single_value = true;
+
+    this.colors_[0] = this.colors_[1];
+    this.stroke_colors_[0] = this.stroke_colors_[1];
+  }
 }
 
 // An array with two colors (fill and stroke)
@@ -548,6 +559,11 @@ ColorAxis.prototype.getRelativeColors = function(rel_pos) {
     }
 
     return rel_color;
+  }
+
+  // Optimization for the single value case
+  if (this.single_value) {
+    return [this.colors_[1], this.stroke_colors_[1]];
   }
 
   rel_colors = [
@@ -756,40 +772,23 @@ Legend.prototype.draw_ = function() {
   this.indicator_span_ = indicator_span;
 };
 
-// Set the background gradient string
-// See: https://stackoverflow.com/a/16219600
-Legend.prototype.getGradientStr_ = function() {
-  var gradient_string =
-      "background-image: -o-linear-gradient(left, {c1}, {c2}); " +
-      "background-image: -moz-linear-gradient(left, {c1}, {c2}); " +
-      "background-image: -webkit-linear-gradient(left, {c1}, {c2}); " +
-      "background-image: -ms-linear-gradient(left, {c1}, {c2}); " +
-      "background: linear-gradient(left, {c1}, {c2})";
-
-  var gradient_colors_arr = [
-      this.geo_chart_.getColorArray_(
-          this.geo_chart_.options_.colorAxis.colors[0]),
-      this.geo_chart_.getColorArray_(
-          this.geo_chart_.options_.colorAxis.colors[1])
-  ];
-  var gradient_colors_str = [
-    this.geo_chart_.getColorArrayStr_(gradient_colors_arr[0]),
-    this.geo_chart_.getColorArrayStr_(gradient_colors_arr[1])
-  ];
-  gradient_string = gradient_string.
-      replace(/\{c1\}/g, gradient_colors_str[0]).
-      replace(/\{c2\}/g, gradient_colors_str[1]);
-
-  return gradient_string;
-};
-
 Legend.prototype.getContainer = function() {
   return this.div_;
 };
 
 Legend.prototype.drawIndicator = function(feature) {
-  var relative_value = this.geo_chart_.getRelativeValue_(
-      feature.getProperty("data-value"));
+  var relative_value = 0;
+
+  // Single value case
+  // In this case, put the indicator in the middle.
+  if (this.geo_chart_.color_axis_.single_value) {
+    relative_value = 0.5;
+  // Normal case
+  } else {
+    relative_value = this.geo_chart_.getRelativeValue_(
+        feature.getProperty("data-value"));
+  }
+
   var width = LEGEND_WIDTH;
   this.indicator_span_.style.left =
       (relative_value * width + LEGEND_INDICATOR_LEFT_OFFSET) + "px";
