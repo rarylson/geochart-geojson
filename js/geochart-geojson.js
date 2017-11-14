@@ -420,7 +420,7 @@ var ColorAxis = function(geoChart) {
 
   this.initCanvas_();
   this.initColors_();
-}
+};
 
 ColorAxis.prototype.initCanvas_ = function() {
   var canvas = null;
@@ -432,7 +432,7 @@ ColorAxis.prototype.initCanvas_ = function() {
   context = canvas.getContext("2d");
 
   this.canvas_context_ = context;
-}
+};
 
 // Convert number to hex string
 //
@@ -440,7 +440,7 @@ ColorAxis.prototype.initCanvas_ = function() {
 ColorAxis.prototype.numToHexStr_ = function(num) {
   // Adding a zero padding if necessary
   return ("0" + num.toString(16)).slice(-2);
-}
+};
 
 // Convert color to RGBA array
 //
@@ -474,14 +474,14 @@ ColorAxis.prototype.toRgbaArray = function(color) {
   a = this.canvas_context_.getImageData(0, 0, 1, 1).data;
 
   return a;
-}
+};
 
 // Convert color to RGB array
 ColorAxis.prototype.toRgbArray = function(color) {
   var a = this.toRgbaArray(color);
 
   return [a[0], a[1], a[2]];
-}
+};
 
 // Convert color to RGBA string
 //
@@ -496,14 +496,14 @@ ColorAxis.prototype.toRgba = function(color) {
   var a = this.toRgbaArray(color);
 
   return "rgba(" + a[0] + "," + a[1] + "," + a[2] + "," + (a[3]/255) + ")";
-}
+};
 
 // Convert color to RGB string
 ColorAxis.prototype.toRgb = function(color) {
   var a = this.toRgbaArray(color);
 
   return "rgb(" + a[0] + "," + a[1] + "," + a[2] + ")";
-}
+};
 
 // Convert color to hex string (like "#000000")
 //
@@ -520,7 +520,7 @@ ColorAxis.prototype.toHex = function(color) {
   return "#" +
       this.numToHexStr_(a[0]) + this.numToHexStr_(a[1]) +
       this.numToHexStr_(a[2]);
-}
+};
 
 ColorAxis.prototype.initColors_ = function() {
   var color_axis_options_ = this.geo_chart_.options_.colorAxis;
@@ -542,7 +542,7 @@ ColorAxis.prototype.initColors_ = function() {
     this.colors_[0] = this.colors_[1];
     this.stroke_colors_[0] = this.stroke_colors_[1];
   }
-}
+};
 
 // An array with two colors (fill and stroke)
 //
@@ -572,7 +572,7 @@ ColorAxis.prototype.getRelativeColors = function(rel_pos) {
   ];
 
   return rel_colors;
-}
+};
 
 // Generate the background gradient CSS string
 // See: https://stackoverflow.com/a/16219600
@@ -589,7 +589,7 @@ ColorAxis.prototype.getGradientCssStr = function() {
       replace(/\{c2\}/g, this.toRgb(this.colors_[1]));
 
   return gradient_string;
-}
+};
 
 context.ColorAxis = ColorAxis;
 

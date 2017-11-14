@@ -1,6 +1,13 @@
 Changelog
 =========
 
+1.2.1
+-----
+
+- **Fix:** Feature and legend colors now works when the datatable contains a single value (issue #1);
+- It's possible to use color names in the options;
+- New examples (that shows specific usage) added.
+
 1.1.1
 -----
 
