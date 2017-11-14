@@ -5,7 +5,7 @@ vim: set ts=2 sw=2 et :
 <html>
   <head>
     <meta charset="utf-8">
-    <title>Geochart GeoJSON - Brazil example page</title>
+    <title>Geochart GeoJSON - Brazil example page using color names</title>
 
     <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
     <!--
@@ -38,22 +38,7 @@ vim: set ts=2 sw=2 et :
           ["Distrito Federal", 20],
           ["Bahia", 19],
           ["Goiás", 15],
-          ["Espírito Santo", 11],
-          ["Alagoas", 7],
-          ["Maranhão", 7],
-          ["Paraíba", 7],
-          ["Rio Grande do Norte", 6],
-          ["Mato Grosso", 5],
-          ["Sergipe", 5],
-          ["Amazonas", 3],
-          ["Acre", 2],
-          ["Mato Grosso do Sul", 2],
-          ["Pará", 2],
-          ["Piauí", 2],
-          ["Amapá", 1],
-          ["Rondônia", 1],
-          ["Roraima", 1],
-          ["Tocantins", 1]
+          ["Espírito Santo", 11]
         ]);
 
         // Instantiate our Geochart GeoJSON object
@@ -69,7 +54,7 @@ vim: set ts=2 sw=2 et :
           geoJsonOptions: {
             idPropertyName: "name"
           },
-          colorAxis: {colors: ["#fafdff", "#3366cc"]},
+          colorAxis: {colors: ["azure", "mediumblue"]},
           legend: {position: "RIGHT_TOP"}
         };
 

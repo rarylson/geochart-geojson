@@ -12,7 +12,7 @@ vim: set ts=2 sw=2 et :
       Note: its recommended that you get a MAPS_API_KEY to your project.
       See: https://developers.google.com/chart/interactive/docs/basic_load_libs#load-settings
     -->
-    <!--<script src="https://maps.googleapis.com/maps/api/js?key=MAPS_API_KEY">-->
+    <!--<script src="https://maps.googleapis.com/maps/api/js?key=MAPS_API_KEY"></script>-->
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD-9tSrke72PouQMnMX-a7eZSW0jkFMBWY"></script>
     <script type="text/javascript" src="../js/geochart-geojson.js"></script>
 
@@ -24,7 +24,7 @@ vim: set ts=2 sw=2 et :
 
         // Create and populate a data table
         var data = new google.visualization.DataTable();
-        data.addColumn("string", "State");
+        data.addColumn("string", "City");
         data.addColumn("number", "Value");
         data.addRows([
           ["Rio de Janeiro", 10],
@@ -43,7 +43,7 @@ vim: set ts=2 sw=2 et :
             center: {lat: -22.15, lng: -42.9},
             zoom: 8
           },
-          geoJson: "rio-state.geo.json",
+          geoJson: "rio-state.geojson",
           geoJsonOptions: {
             idPropertyName: "name"
           }

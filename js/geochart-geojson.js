@@ -34,12 +34,14 @@ var TOOLTIP_STYLE = {
 };
 var TOOLTIP_MARGIN = 2;
 var TOOLTIP_OFFSET = 12;
-// Color axis constants
-var COLOR_AXIS_WIDTH = 250;
-var COLOR_AXIS_HEIGHT = 13;
-var COLOR_AXIS_INDICATOR_SIZE = 12;
-var COLOR_AXIS_INDICATOR_TOP_OFFSET = -8;
-var COLOR_AXIS_INDICATOR_LEFT_OFFSET = -6;
+// Legend constants
+var LEGEND_WIDTH = 250;
+var LEGEND_HEIGHT = 13;
+var LEGEND_NUM_PADDING_VERT = 2;
+var LEGEND_NUM_PADDING_HORIZ = 4;
+var LEGEND_INDICATOR_SIZE = 12;
+var LEGEND_INDICATOR_TOP_OFFSET = -8;
+var LEGEND_INDICATOR_LEFT_OFFSET = -6;
 
 
 // Auxiliary functions
@@ -105,9 +107,10 @@ var GeoChart = function(container) {
   // Optionally, it will also handle the underlying map layer (map, satellite
   // or simple map) and the map control (zoom, map drag). These features are
   // disabled by default.
-  this.maps_map_ = null;
-  this.tooltip_ = null;
+  this.map_ = null;
   this.color_axis_ = null;
+  this.tooltip_ = null;
+  this.legend_ = null;
   // Min and max values of the DataTable rows
   this.min_ = 0;
   this.max_ = 0;
@@ -180,7 +183,7 @@ GeoChart.prototype.getMapsOptions_ = function() {
     throw new Error("Invalid `mapsBackground` option");
   }
 
-  if (this.options_.mapsControl === false) {
+  if (! this.options_.mapsControl) {
     maps_options.disableDefaultUI = true;
     maps_options.scrollwheel = false;
     maps_options.draggable = false;
@@ -245,9 +248,12 @@ GeoChart.prototype.draw = function(data, options={}) {
 
         // Create the color axis
         this.color_axis_ = new ColorAxis(this);
+
+        // Create the legend
+        this.legend_ = new Legend(this);
         this.map_.controls[
             google.maps.ControlPosition[this.options_.legend.position]].push(
-                this.color_axis_.getContainer());
+                this.legend_.getContainer());
 
         // Create the tooltip
         this.tooltip_ = new Tooltip(this);
@@ -273,37 +279,18 @@ GeoChart.prototype.draw = function(data, options={}) {
     // Feature with data style
     // Colorize the features with data (using the gradient colors)
     if (feature.getProperty("data-value") !== undefined) {
-      var fill_color_arr = [];
-      var stroke_color_arr = [];
-
-      var gradient_colors_arr = [
-          this.getColorArray_(this.options_.colorAxis.colors[0]),
-          this.getColorArray_(this.options_.colorAxis.colors[1])
-      ];
-      var gradient_stroke_colors_arr = [
-          this.getColorArray_(this.options_.colorAxis.strokeColors[0]),
-          this.getColorArray_(this.options_.colorAxis.strokeColors[1])
-      ];
       var relative_value = this.getRelativeValue_(
           feature.getProperty("data-value"));
 
-      for (var i = 0; i < 3; i++) {
-        fill_color_arr[i] = Math.round(
-            ((gradient_colors_arr[1][i] - gradient_colors_arr[0][i]) *
-            relative_value) + gradient_colors_arr[0][i]);
-        stroke_color_arr[i] = Math.round(
-            ((gradient_stroke_colors_arr[1][i] -
-            gradient_stroke_colors_arr[0][i]) *
-            relative_value) + gradient_stroke_colors_arr[0][i]);
-      }
+      var colors_to_fill = this.color_axis_.getRelativeColors(relative_value);
 
       style = Object.assign(style, {
-        fillColor: this.getColorArrayStr_(fill_color_arr),
-        strokeColor: this.getColorArrayStr_(stroke_color_arr)
+        fillColor: this.color_axis_.toHex(colors_to_fill[0]),
+        strokeColor: this.color_axis_.toHex(colors_to_fill[1])
       });
 
       // Selected feature style
-      if (feature.getProperty("data-selected") === true) {
+      if (feature.getProperty("data-selected")) {
         style = Object.assign(
             style, this.options_.featureStyleHighlighted,
             {zIndex: SELECTED_Z_INDEX}
@@ -326,7 +313,7 @@ GeoChart.prototype.draw = function(data, options={}) {
       this.map_.data.overrideStyle(event.feature, highlighted_style);
     }
     if (event.feature.getProperty("data-value") !== undefined) {
-      this.color_axis_.drawIndicator(event.feature);
+      this.legend_.drawIndicator(event.feature);
     }
   }.bind(this));
 
@@ -335,7 +322,7 @@ GeoChart.prototype.draw = function(data, options={}) {
       this.map_.data.revertStyle();
     }
     this.tooltip_.undrawTooltip();
-    this.color_axis_.undrawIndicator();
+    this.legend_.undrawIndicator();
   }.bind(this));
 
   this.map_.data.addListener("mousemove", function(event) {
@@ -360,35 +347,6 @@ GeoChart.prototype.draw = function(data, options={}) {
     this.unselectFeature_();
   }.bind(this));
 
-};
-
-// Based on: https://stackoverflow.com/questions/5623838/rgb-to-hex-and-hex-
-//     to-rgb
-GeoChart.prototype.getColorArray_ = function(color) {
-  var short_regex = /^#?([\da-f])([\da-f])([\da-f])$/i;
-  var regex = /^#?([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i;
-
-  var color_array = null;
-
-  color = color.replace(short_regex, function(m, r, g, b) {
-    return "#" + r + r + g + g + b + b;
-  });
-  var result = regex.exec(color);
-  if (! result) {
-    throw new Error("Invalid color string");
-  }
-  color_array = [
-    parseInt(result[1], 16),
-    parseInt(result[2], 16),
-    parseInt(result[3], 16)
-  ];
-
-  return color_array;
-};
-
-GeoChart.prototype.getColorArrayStr_ = function(color_array) {
-  return "rgb(" + color_array[0] + ", " + color_array[1] + ", " +
-      color_array[2] + ")";
 };
 
 GeoChart.prototype.getRelativeValue_ = function(value) {
@@ -439,6 +397,203 @@ GeoChart.prototype.unselectFeature_ = function() {
 context.GeoChart = GeoChart;
 
 
+// ColorAxis for GeoChart GeoJSON
+//
+// It's an abstraction that implements the color processment needed to color
+// the features and the legend.
+//
+// The color conversion functions are based on a `njvack`'s Github Gist.
+//
+// Based on: https://gist.github.com/njvack/02ad8efcb0d552b0230d
+//
+// Params:
+//
+// - geoChart: The GeoChart GeoJSON object where this color axis belong to.
+var ColorAxis = function(geoChart) {
+  this.geo_chart_ = geoChart;
+
+  this.single_value = false;
+
+  this.colors_ = [];
+  this.stroke_colors_ = [];
+  this.canvas_context_ = null;
+
+  this.initCanvas_();
+  this.initColors_();
+};
+
+ColorAxis.prototype.initCanvas_ = function() {
+  var canvas = null;
+  var context = null;
+
+  canvas = document.createElement("canvas");
+  canvas.height = 1;
+  canvas.width = 1;
+  context = canvas.getContext("2d");
+
+  this.canvas_context_ = context;
+};
+
+// Convert number to hex string
+//
+// Turns a number (0-255) into a 2-character hex number (00-ff) as an string.
+ColorAxis.prototype.numToHexStr_ = function(num) {
+  // Adding a zero padding if necessary
+  return ("0" + num.toString(16)).slice(-2);
+};
+
+// Convert color to RGBA array
+//
+// Turns any valid canvas fillStyle into a 4-element Uint8ClampedArray with
+// bytes for R, G, B, and A. Invalid styles will return [0, 0, 0, 0].
+// Examples:
+// toRgbArray('red')  # [255, 0, 0, 255]
+// toRgbArray('#ff0000')  # [255, 0, 0, 255]
+// toRgbArray('garbagey')  # [0, 0, 0, 0]
+//
+// This function also can process RGB or RGBA arrays.
+ColorAxis.prototype.toRgbaArray = function(color) {
+  var a = [];
+
+  // Already receive a RGB or RGBA array cases
+  if (Array.isArray(color)) {
+    a = color;
+    // If receive a RGB array, use `255` as opacity.
+    if (color.length === 3) {
+      a.push(255);
+    }
+    return a;
+  }
+
+  // Setting an invalid fillStyle leaves this unchanged.
+  this.canvas_context_.fillStyle = "rgba(0, 0, 0, 0)";
+  // We're reusing the canvas, so fill it with something predictable.
+  this.canvas_context_.clearRect(0, 0, 1, 1);
+  this.canvas_context_.fillStyle = color;
+  this.canvas_context_.fillRect(0, 0, 1, 1);
+  a = this.canvas_context_.getImageData(0, 0, 1, 1).data;
+
+  return a;
+};
+
+// Convert color to RGB array
+ColorAxis.prototype.toRgbArray = function(color) {
+  var a = this.toRgbaArray(color);
+
+  return [a[0], a[1], a[2]];
+};
+
+// Convert color to RGBA string
+//
+// Turns any valid canvas fill style (or a RGB or RGBA array) into an RGBA
+// string.
+// Returns 'rgba(0,0,0,0)' for invalid colors.
+// Examples:
+// toRgba('red')  # 'rgba(255,0,0,1)'
+// toRgba('#f00')  # 'rgba(255,0,0,1)'
+// toRgba('garbagey')  # 'rgba(0,0,0,0)'
+ColorAxis.prototype.toRgba = function(color) {
+  var a = this.toRgbaArray(color);
+
+  return "rgba(" + a[0] + "," + a[1] + "," + a[2] + "," + (a[3]/255) + ")";
+};
+
+// Convert color to RGB string
+ColorAxis.prototype.toRgb = function(color) {
+  var a = this.toRgbaArray(color);
+
+  return "rgb(" + a[0] + "," + a[1] + "," + a[2] + ")";
+};
+
+// Convert color to hex string (like "#000000")
+//
+// Turns any valid canvas fill style into a hex triple.
+// Returns '#000000' for invalid colors.
+// Examples:
+// toHex('red')  # '#ff0000'
+// toHex('rgba(255,0,0,1)')  # '#ff0000'
+// toHex('garbagey')  # '#000000'
+// toHex(some_pattern)  # Depends on the pattern
+ColorAxis.prototype.toHex = function(color) {
+  var a = this.toRgbArray(color);
+
+  return "#" +
+      this.numToHexStr_(a[0]) + this.numToHexStr_(a[1]) +
+      this.numToHexStr_(a[2]);
+};
+
+ColorAxis.prototype.initColors_ = function() {
+  var color_axis_options_ = this.geo_chart_.options_.colorAxis;
+
+  this.colors_ = [
+    this.toRgbArray(color_axis_options_.colors[0]),
+    this.toRgbArray(color_axis_options_.colors[1])
+  ];
+  this.stroke_colors_ = [
+    this.toRgbArray(color_axis_options_.strokeColors[0]),
+    this.toRgbArray(color_axis_options_.strokeColors[1])
+  ];
+
+  // Single value case
+  // In this case, use a single color (the color of the max value).
+  if (this.geo_chart_.min_ === this.geo_chart_.max_) {
+    this.single_value = true;
+
+    this.colors_[0] = this.colors_[1];
+    this.stroke_colors_[0] = this.stroke_colors_[1];
+  }
+};
+
+// An array with two colors (fill and stroke)
+//
+// The colors represent a relative position in the color axis gradients (fill
+// and stroke).
+ColorAxis.prototype.getRelativeColors = function(rel_pos) {
+  var rel_colors = [];
+
+  function get_relative_color(colors, rel_pos) {
+    var rel_color = [];
+    for (var i = 0; i < 3; i++) {
+      rel_color[i] = Math.round(
+          (colors[1][i] - colors[0][i]) * rel_pos + colors[0][i]);
+    }
+
+    return rel_color;
+  }
+
+  // Optimization for the single value case
+  if (this.single_value) {
+    return [this.colors_[1], this.stroke_colors_[1]];
+  }
+
+  rel_colors = [
+    get_relative_color(this.colors_, rel_pos),
+    get_relative_color(this.stroke_colors_, rel_pos)
+  ];
+
+  return rel_colors;
+};
+
+// Generate the background gradient CSS string
+// See: https://stackoverflow.com/a/16219600
+ColorAxis.prototype.getGradientCssStr = function() {
+  var gradient_string =
+      "background-image: -o-linear-gradient(left, {c1}, {c2}); " +
+      "background-image: -moz-linear-gradient(left, {c1}, {c2}); " +
+      "background-image: -webkit-linear-gradient(left, {c1}, {c2}); " +
+      "background-image: -ms-linear-gradient(left, {c1}, {c2}); " +
+      "background: linear-gradient(left, {c1}, {c2})";
+
+  gradient_string = gradient_string.
+      replace(/\{c1\}/g, this.toRgb(this.colors_[0])).
+      replace(/\{c2\}/g, this.toRgb(this.colors_[1]));
+
+  return gradient_string;
+};
+
+context.ColorAxis = ColorAxis;
+
+
 // Tooltip for GeoChart GeoJSON
 //
 // It's an overlay layer to be placed on a Google Maps map.
@@ -456,7 +611,7 @@ var Tooltip = function(geoChart) {
 
   this.LatLng = null;
 
-  this.setMap(geoChart.map_);
+  this.setMap(this.geo_chart_.map_);
 };
 
 Tooltip.prototype = new google.maps.OverlayView();
@@ -547,14 +702,14 @@ Tooltip.prototype.undrawTooltip = function() {
 context.Tooltip = Tooltip;
 
 
-// Color axis for GeoChart GeoJSON
+// Legend for GeoChart GeoJSON
 //
 // It's a control to be placed on a Google Maps map.
 //
 // Params:
 //
-// - geoChart: The GeoChart GeoJSON object where the color axis will be placed.
-var ColorAxis = function(geoChart) {
+// - geoChart: The GeoChart GeoJSON object where the legend will be placed.
+var Legend = function(geoChart) {
   this.geo_chart_ = geoChart;
 
   this.div_ = null;
@@ -563,48 +718,51 @@ var ColorAxis = function(geoChart) {
   this.draw_();
 };
 
-ColorAxis.prototype.draw_ = function() {
+Legend.prototype.draw_ = function() {
   var div = document.createElement("div");
 
   var div_inner = document.createElement("div");
   Object.assign(
       div_inner.style,
-      {marginTop: - COLOR_AXIS_INDICATOR_TOP_OFFSET + "px"},
+      {marginTop: - LEGEND_INDICATOR_TOP_OFFSET + "px"},
       processTextStyle_(this.geo_chart_.options_.legend.textStyle));
 
   var min_div =  document.createElement("div");
-  min_div.style.padding = "4px";
+  min_div.style.padding =
+      LEGEND_NUM_PADDING_VERT + "px " + LEGEND_NUM_PADDING_HORIZ + "px";
   min_div.style.display = "table-cell";
   min_div.innerText = this.geo_chart_.min_;
   div_inner.appendChild(min_div);
 
-  var axis_div = document.createElement("div");
-  axis_div.style.display = "table-cell";
-  axis_div.style.verticalAlign = "middle";
-  axis_div.style.position = "relative";
-  axis_div.style.padding = "0";
-  axis_div.style.margin = "0";
-  var axis_div_inner = document.createElement("div");
-  axis_div_inner.style.width = COLOR_AXIS_WIDTH + "px";
-  axis_div_inner.style.height = COLOR_AXIS_HEIGHT + "px";
-  axis_div_inner.style.padding = "0";
-  axis_div_inner.style.margin = "0";
+  var legend_div = document.createElement("div");
+  legend_div.style.display = "table-cell";
+  legend_div.style.verticalAlign = "middle";
+  legend_div.style.position = "relative";
+  legend_div.style.padding = "0";
+  legend_div.style.margin = "0";
+  var legend_div_inner = document.createElement("div");
+  legend_div_inner.style.width = LEGEND_WIDTH + "px";
+  legend_div_inner.style.height = LEGEND_HEIGHT + "px";
+  legend_div_inner.style.padding = "0";
+  legend_div_inner.style.margin = "0";
   // See: https://stackoverflow.com/a/16219600
-  axis_div_inner.setAttribute(
+  legend_div_inner.setAttribute(
       "style",
-      axis_div_inner.getAttribute("style") + "; " + this.getGradientStr_());
-  axis_div.appendChild(axis_div_inner);
+      legend_div_inner.getAttribute("style") + "; " +
+          this.geo_chart_.color_axis_.getGradientCssStr());
+  legend_div.appendChild(legend_div_inner);
   var indicator_span = document.createElement("span");
-  indicator_span.style.fontSize = COLOR_AXIS_INDICATOR_SIZE + "px";
-  indicator_span.style.top = COLOR_AXIS_INDICATOR_TOP_OFFSET + "px";
+  indicator_span.style.fontSize = LEGEND_INDICATOR_SIZE + "px";
+  indicator_span.style.top = LEGEND_INDICATOR_TOP_OFFSET + "px";
   indicator_span.style.position = "absolute";
   indicator_span.style.visibility = "hidden";
   indicator_span.innerText = "▼";
-  axis_div.appendChild(indicator_span);
-  div_inner.appendChild(axis_div);
+  legend_div.appendChild(indicator_span);
+  div_inner.appendChild(legend_div);
 
   var max_div =  document.createElement("div");
-  max_div.style.padding = "4px";
+  max_div.style.padding =
+      LEGEND_NUM_PADDING_VERT + "px " + LEGEND_NUM_PADDING_HORIZ + "px";
   max_div.style.display = "table-cell";
   max_div.innerText = this.geo_chart_.max_;
   div_inner.appendChild(max_div);
@@ -614,51 +772,34 @@ ColorAxis.prototype.draw_ = function() {
   this.indicator_span_ = indicator_span;
 };
 
-// Set the background gradient string
-// See: https://stackoverflow.com/a/16219600
-ColorAxis.prototype.getGradientStr_ = function() {
-  var gradient_string =
-      "background-image: -o-linear-gradient(left, {c1}, {c2}); " +
-      "background-image: -moz-linear-gradient(left, {c1}, {c2}); " +
-      "background-image: -webkit-linear-gradient(left, {c1}, {c2}); " +
-      "background-image: -ms-linear-gradient(left, {c1}, {c2}); " +
-      "background: linear-gradient(left, {c1}, {c2})";
-
-  var gradient_colors_arr = [
-      this.geo_chart_.getColorArray_(
-          this.geo_chart_.options_.colorAxis.colors[0]),
-      this.geo_chart_.getColorArray_(
-          this.geo_chart_.options_.colorAxis.colors[1])
-  ];
-  var gradient_colors_str = [
-    this.geo_chart_.getColorArrayStr_(gradient_colors_arr[0]),
-    this.geo_chart_.getColorArrayStr_(gradient_colors_arr[1])
-  ];
-  gradient_string = gradient_string.
-      replace(/\{c1\}/g, gradient_colors_str[0]).
-      replace(/\{c2\}/g, gradient_colors_str[1]);
-
-  return gradient_string;
-};
-
-ColorAxis.prototype.getContainer = function() {
+Legend.prototype.getContainer = function() {
   return this.div_;
 };
 
-ColorAxis.prototype.drawIndicator = function(feature) {
-  var relative_value = this.geo_chart_.getRelativeValue_(
-      feature.getProperty("data-value"));
-  var width = COLOR_AXIS_WIDTH;
+Legend.prototype.drawIndicator = function(feature) {
+  var relative_value = 0;
+
+  // Single value case
+  // In this case, put the indicator in the middle.
+  if (this.geo_chart_.color_axis_.single_value) {
+    relative_value = 0.5;
+  // Normal case
+  } else {
+    relative_value = this.geo_chart_.getRelativeValue_(
+        feature.getProperty("data-value"));
+  }
+
+  var width = LEGEND_WIDTH;
   this.indicator_span_.style.left =
-      (relative_value * width + COLOR_AXIS_INDICATOR_LEFT_OFFSET) + "px";
+      (relative_value * width + LEGEND_INDICATOR_LEFT_OFFSET) + "px";
   this.indicator_span_.style.visibility = "visible";
 };
 
-ColorAxis.prototype.undrawIndicator = function() {
+Legend.prototype.undrawIndicator = function() {
   this.indicator_span_.style.visibility = "hidden";
 };
 
-context.ColorAxis = ColorAxis;
+context.Legend = Legend;
 
 
 })(geochart_geojson);
