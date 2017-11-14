@@ -5,7 +5,7 @@ vim: set ts=2 sw=2 et :
 <html>
   <head>
     <meta charset="utf-8">
-    <title>Geochart GeoJSON - Brazil example page using color names</title>
+    <title>Geochart GeoJSON - Brazil example page</title>
 
     <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
     <!--
@@ -54,7 +54,8 @@ vim: set ts=2 sw=2 et :
           geoJsonOptions: {
             idPropertyName: "name"
           },
-          colorAxis: {colors: ["azure", "mediumblue"]}
+          colorAxis: {colors: ["#fafdff", "#3366cc"]},
+          legend: "none"
         };
 
         vis.draw(data, options);

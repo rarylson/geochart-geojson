@@ -142,7 +142,7 @@ GeoChart.prototype.DEFAULT_OPTIONS = {
   geoJson: null,
   geoJsonOptions: null,
   // Set `legend` to `"none"` to disable the legend.
-  legend: { // TODO Implement
+  legend: {
     // A position string. Valid options are `ControlPosition` locations in the
     // Google Maps API.
     // See: https://developers.google.com/maps/documentation/javascript/ \
@@ -250,10 +250,17 @@ GeoChart.prototype.draw = function(data, options={}) {
         this.color_axis_ = new ColorAxis(this);
 
         // Create the legend
-        this.legend_ = new Legend(this);
-        this.map_.controls[
-            google.maps.ControlPosition[this.options_.legend.position]].push(
-                this.legend_.getContainer());
+        // Note that if the option `legend` is set to `"none"`, the legend
+        // with be disabled.
+        if (this.options_.legend !== "none") {
+          var control_position = null;
+ 
+          this.legend_ = new Legend(this);
+          control_position = google.maps.ControlPosition[
+              this.options_.legend.position];
+          this.map_.controls[control_position].push(
+              this.legend_.getContainer());
+        }
 
         // Create the tooltip
         this.tooltip_ = new Tooltip(this);
@@ -313,7 +320,9 @@ GeoChart.prototype.draw = function(data, options={}) {
       this.map_.data.overrideStyle(event.feature, highlighted_style);
     }
     if (event.feature.getProperty("data-value") !== undefined) {
-      this.legend_.drawIndicator(event.feature);
+      if (this.legend_) {
+        this.legend_.drawIndicator(event.feature);
+      }
     }
   }.bind(this));
 
@@ -322,7 +331,9 @@ GeoChart.prototype.draw = function(data, options={}) {
       this.map_.data.revertStyle();
     }
     this.tooltip_.undrawTooltip();
-    this.legend_.undrawIndicator();
+    if (this.legend_) {
+      this.legend_.undrawIndicator();
+    }
   }.bind(this));
 
   this.map_.data.addListener("mousemove", function(event) {
