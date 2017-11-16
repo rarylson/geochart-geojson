@@ -5,7 +5,7 @@ vim: set ts=2 sw=2 et :
 <html>
   <head>
     <meta charset="utf-8">
-    <title>Geochart GeoJSON - Rio (state) example page with only one entry</title>
+    <title>Geochart GeoJSON - Rio de Janeiro (city) example page</title>
 
     <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
     <!--
@@ -24,10 +24,20 @@ vim: set ts=2 sw=2 et :
 
         // Create and populate a data table
         var data = new google.visualization.DataTable();
-        data.addColumn("string", "City");
+        data.addColumn("string", "Neighborhood");
         data.addColumn("number", "Value");
         data.addRows([
-          ["Rio de Janeiro", 10],
+          ["Copacabana", 10],
+          ["Ipanema", 8],
+          ["Leblon", 8],
+          ["Lapa", 7],
+          ["Centro", 6],
+          ["Barra da Tijuca", 6],
+          ["Urca", 5],
+          ["Maracanã", 5],
+          ["Recreio dos Bandeirantes", 5],
+          ["Lagoa", 3],
+          ["Tijuca", 3]
         ]);
 
         // Instantiate our Geochart GeoJSON object
@@ -36,22 +46,21 @@ vim: set ts=2 sw=2 et :
         // Set Geochart GeoJSON options
         var options = {
           mapsOptions: {
-            center: {lat: -22.15, lng: -42.9},
-            zoom: 8
+            center: {lat: -22.93, lng: -43.45},
+            zoom: 11
           },
-          geoJson: "rio-state.geojson",
+          geoJson: "rio-city.geojson",
           geoJsonOptions: {
             idPropertyName: "name"
           }
         };
 
-        // Draw our Geochart GeoJSON with the data we created locally
         vis.draw(data, options);
       }
     </script>
   </head>
 
   <body>
-    <div id="mydiv" style="width: 900px; height: 560px;"></div>
+    <div id="mydiv" style="width: 1040px; height: 560px;"></div>
   </body>
 </html>

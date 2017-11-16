@@ -1,11 +1,18 @@
 Changelog
 =========
 
+1.3.0
+-----
+
+- It's possible to disable the legend;
+- **Fix:** Problems in deep merge of options;
+- Usage in `README.md`.
+
 1.2.0
 -----
 
 - **Fix:** Feature and legend colors now works when the datatable contains a single value (issue #1);
-- It's possible to use color names in the options;
+- It's possible to use color names in options;
 - New examples (that shows specific usage) added.
 
 1.1.1

@@ -62,17 +62,24 @@ function processTextStyle_(textStyle) {
   return style;
 }
 
+// Deep merge two objects
+//
+// The objects passed as params are kept intact.
 function deepMerge_(obj1, obj2) {
+  var obj = {};
+
+  obj = JSON.parse(JSON.stringify(obj1));
+
   Object.entries(obj2).forEach(function(p) {
-    if (p[0] in obj1 && typeof obj1[p[0]] === "object" &&
-        obj1[p[0]] !== null && typeof p[1] === "object") {
-      deepMerge_(obj1[p[0]], p[1]);
+    if (p[0] in obj && typeof obj[p[0]] === "object" &&
+        obj[p[0]] !== null && typeof p[1] === "object") {
+      obj[p[0]] = deepMerge_(obj[p[0]], p[1]);
     } else {
-      obj1[p[0]] = p[1];
+      obj[p[0]] = p[1];
     }
   });
 
-  return obj1;
+  return obj;
 }
 
 
@@ -142,7 +149,7 @@ GeoChart.prototype.DEFAULT_OPTIONS = {
   geoJson: null,
   geoJsonOptions: null,
   // Set `legend` to `"none"` to disable the legend.
-  legend: { // TODO Implement
+  legend: {
     // A position string. Valid options are `ControlPosition` locations in the
     // Google Maps API.
     // See: https://developers.google.com/maps/documentation/javascript/ \
@@ -226,9 +233,9 @@ GeoChart.prototype.draw = function(data, options={}) {
         var max = -Number.MAX_VALUE;
 
         // Populate the feature "data-" properties
-        for (var row = 0; row < data.getNumberOfRows(); row++) {
-          var id = data.getValue(row, 0);
-          var value = data.getValue(row, 1);
+        for (var row = 0; row < this.data_.getNumberOfRows(); row++) {
+          var id = this.data_.getValue(row, 0);
+          var value = this.data_.getValue(row, 1);
           var feature = this.map_.data.getFeatureById(id);
 
           // Also keep track of min and max values
@@ -240,7 +247,7 @@ GeoChart.prototype.draw = function(data, options={}) {
           }
           feature.setProperty("data-row", row);
           feature.setProperty("data-id", id);
-          feature.setProperty("data-label", data.getColumnLabel(1));
+          feature.setProperty("data-label", this.data_.getColumnLabel(1));
           feature.setProperty("data-value", value);
         }
         this.min_ = min;
@@ -250,10 +257,17 @@ GeoChart.prototype.draw = function(data, options={}) {
         this.color_axis_ = new ColorAxis(this);
 
         // Create the legend
-        this.legend_ = new Legend(this);
-        this.map_.controls[
-            google.maps.ControlPosition[this.options_.legend.position]].push(
-                this.legend_.getContainer());
+        // Note that if the option `legend` is set to `"none"`, the legend
+        // with be disabled.
+        if (this.options_.legend !== "none") {
+          var control_position = null;
+ 
+          this.legend_ = new Legend(this);
+          control_position = google.maps.ControlPosition[
+              this.options_.legend.position];
+          this.map_.controls[control_position].push(
+              this.legend_.getContainer());
+        }
 
         // Create the tooltip
         this.tooltip_ = new Tooltip(this);
@@ -313,7 +327,9 @@ GeoChart.prototype.draw = function(data, options={}) {
       this.map_.data.overrideStyle(event.feature, highlighted_style);
     }
     if (event.feature.getProperty("data-value") !== undefined) {
-      this.legend_.drawIndicator(event.feature);
+      if (this.legend_) {
+        this.legend_.drawIndicator(event.feature);
+      }
     }
   }.bind(this));
 
@@ -322,7 +338,9 @@ GeoChart.prototype.draw = function(data, options={}) {
       this.map_.data.revertStyle();
     }
     this.tooltip_.undrawTooltip();
-    this.legend_.undrawIndicator();
+    if (this.legend_) {
+      this.legend_.undrawIndicator();
+    }
   }.bind(this));
 
   this.map_.data.addListener("mousemove", function(event) {
