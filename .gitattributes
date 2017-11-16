@@ -1,2 +1,2 @@
-*.geo.json binary
+*.geojson binary
 /build/* binary
