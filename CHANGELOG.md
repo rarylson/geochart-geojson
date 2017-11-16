@@ -8,7 +8,7 @@ Changelog
 - **Fix:** Problems in deep merge of options;
 - Usage in `README.md`.
 
-1.2.1
+1.2.0
 -----
 
 - **Fix:** Feature and legend colors now works when the datatable contains a single value (issue #1);
