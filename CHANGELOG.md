@@ -1,10 +1,12 @@
 Changelog
 =========
 
-X.X.X
+1.3.0
 -----
 
-- It's possible to disable the legend.
+- It's possible to disable the legend;
+- **Fix:** Problems in deep merge of options;
+- Usage in `README.md`.
 
 1.2.1
 -----
