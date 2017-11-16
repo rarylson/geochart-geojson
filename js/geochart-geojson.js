@@ -62,17 +62,24 @@ function processTextStyle_(textStyle) {
   return style;
 }
 
+// Deep merge two objects
+//
+// The objects passed as params are kept intact.
 function deepMerge_(obj1, obj2) {
+  var obj = {};
+
+  obj = JSON.parse(JSON.stringify(obj1));
+
   Object.entries(obj2).forEach(function(p) {
-    if (p[0] in obj1 && typeof obj1[p[0]] === "object" &&
-        obj1[p[0]] !== null && typeof p[1] === "object") {
-      deepMerge_(obj1[p[0]], p[1]);
+    if (p[0] in obj && typeof obj[p[0]] === "object" &&
+        obj[p[0]] !== null && typeof p[1] === "object") {
+      obj[p[0]] = deepMerge_(obj[p[0]], p[1]);
     } else {
-      obj1[p[0]] = p[1];
+      obj[p[0]] = p[1];
     }
   });
 
-  return obj1;
+  return obj;
 }
 
 
@@ -226,9 +233,9 @@ GeoChart.prototype.draw = function(data, options={}) {
         var max = -Number.MAX_VALUE;
 
         // Populate the feature "data-" properties
-        for (var row = 0; row < data.getNumberOfRows(); row++) {
-          var id = data.getValue(row, 0);
-          var value = data.getValue(row, 1);
+        for (var row = 0; row < this.data_.getNumberOfRows(); row++) {
+          var id = this.data_.getValue(row, 0);
+          var value = this.data_.getValue(row, 1);
           var feature = this.map_.data.getFeatureById(id);
 
           // Also keep track of min and max values
@@ -240,7 +247,7 @@ GeoChart.prototype.draw = function(data, options={}) {
           }
           feature.setProperty("data-row", row);
           feature.setProperty("data-id", id);
-          feature.setProperty("data-label", data.getColumnLabel(1));
+          feature.setProperty("data-label", this.data_.getColumnLabel(1));
           feature.setProperty("data-value", value);
         }
         this.min_ = min;
