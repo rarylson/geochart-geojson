@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<!--
+vim: set ts=2 sw=2 et :
+-->
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Geochart GeoJSON - Rio de Janeiro (city) with an invalid feature example page</title>
+
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <!--
+      Note: its recommended that you get a MAPS_API_KEY to your project.
+      See: https://developers.google.com/chart/interactive/docs/basic_load_libs#load-settings
+    -->
+    <!--<script src="https://maps.googleapis.com/maps/api/js?key=MAPS_API_KEY"></script>-->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD-9tSrke72PouQMnMX-a7eZSW0jkFMBWY"></script>
+    <script type="text/javascript" src="../../js/geochart-geojson.js"></script>
+
+    <script type="text/javascript">
+      google.charts.load("current");
+      google.charts.setOnLoadCallback(drawVisualization);
+
+      function drawVisualization() {
+
+        // Create and populate a data table
+        var data = new google.visualization.DataTable();
+        data.addColumn("string", "Neighborhood");
+        data.addColumn("number", "Value");
+        data.addRows([
+          ["Copacabana", 10],
+          // Simulating typo error
+          // Should be "Ipanema".
+          ["Ipanemanema", 8],
+          ["Leblon", 8],
+          ["Lapa", 7],
+          ["Centro", 6]
+        ]);
+
+        // Instantiate our Geochart GeoJSON object
+        var vis = new geochart_geojson.GeoChart(document.getElementById("mydiv"));
+
+        // Set Geochart GeoJSON options
+        var options = {
+          mapsOptions: {
+            center: {lat: -22.93, lng: -43.45},
+            zoom: 11
+          },
+          geoJson: "../rio-city.geojson",
+          geoJsonOptions: {
+            idPropertyName: "name"
+          }
+        };
+
+        vis.draw(data, options);
+      }
+    </script>
+  </head>
+
+  <body>
+    <div id="mydiv" style="width: 1040px; height: 560px;"></div>
+  </body>
+</html>

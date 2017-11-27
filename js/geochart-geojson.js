@@ -237,23 +237,29 @@ GeoChart.prototype.draw = function(data, options={}) {
         var min = Number.MAX_VALUE;
         var max = -Number.MAX_VALUE;
 
-        // Populate the feature "data-" properties
+        // Process the datatable values
         for (var row = 0; row < this.data_.getNumberOfRows(); row++) {
           var id = this.data_.getValue(row, 0);
           var value = this.data_.getValue(row, 1);
-          var feature = this.map_.data.getFeatureById(id);
 
-          // Also keep track of min and max values
+          // Keep track of min and max values
           if (value < min) {
             min = value;
           }
           if (value > max) {
             max = value;
           }
-          feature.setProperty("data-row", row);
-          feature.setProperty("data-id", id);
-          feature.setProperty("data-label", this.data_.getColumnLabel(1));
-          feature.setProperty("data-value", value);
+          
+          // Populate the feature "data-" properties
+          var feature = this.map_.data.getFeatureById(id);
+          if (feature) {
+            feature.setProperty("data-row", row);
+            feature.setProperty("data-id", id);
+            feature.setProperty("data-label", this.data_.getColumnLabel(1));
+            feature.setProperty("data-value", value);
+          } else {
+            console.warn('Feature "' + id + '" not found');
+          }
         }
         this.min_ = min;
         this.max_ = max;
