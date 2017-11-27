@@ -5,7 +5,7 @@ vim: set ts=2 sw=2 et :
 <html>
   <head>
     <meta charset="utf-8">
-    <title>Geochart GeoJSON - Brazil example page</title>
+    <title>Geochart GeoJSON - Rio (state) example page with no (zero) entries</title>
 
     <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
     <!--
@@ -14,7 +14,7 @@ vim: set ts=2 sw=2 et :
     -->
     <!--<script src="https://maps.googleapis.com/maps/api/js?key=MAPS_API_KEY"></script>-->
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD-9tSrke72PouQMnMX-a7eZSW0jkFMBWY"></script>
-    <script type="text/javascript" src="../js/geochart-geojson.js"></script>
+    <script type="text/javascript" src="../../js/geochart-geojson.js"></script>
 
     <script type="text/javascript">
       google.charts.load("current");
@@ -22,24 +22,10 @@ vim: set ts=2 sw=2 et :
 
       function drawVisualization() {
 
-        // Create and populate a data table
+        // Create an empty data table
         var data = new google.visualization.DataTable();
-        data.addColumn("string", "State");
+        data.addColumn("string", "City");
         data.addColumn("number", "Value");
-        data.addRows([
-          ["São Paulo", 336],
-          ["Rio de Janeiro", 78],
-          ["Paraná", 69],
-          ["Minas Gerais", 67],
-          ["Rio Grande do Sul", 55],
-          ["Santa Catarina", 50],
-          ["Ceará", 25],
-          ["Pernambuco", 22],
-          ["Distrito Federal", 20],
-          ["Bahia", 19],
-          ["Goiás", 15],
-          ["Espírito Santo", 11]
-        ]);
 
         // Instantiate our Geochart GeoJSON object
         var vis = new geochart_geojson.GeoChart(document.getElementById("mydiv"));
@@ -47,23 +33,22 @@ vim: set ts=2 sw=2 et :
         // Set Geochart GeoJSON options
         var options = {
           mapsOptions: {
-            center: {lat: -16, lng: -53},
-            zoom: 4
+            center: {lat: -22.15, lng: -42.9},
+            zoom: 8
           },
-          geoJson: "brazil.geojson",
+          geoJson: "../rio-state.geojson",
           geoJsonOptions: {
             idPropertyName: "name"
-          },
-          colorAxis: {colors: ["#fafdff", "#3366cc"]},
-          legend: "none"
+          }
         };
 
+        // Draw our Geochart GeoJSON with the data we created locally
         vis.draw(data, options);
       }
     </script>
   </head>
 
   <body>
-    <div id="mydiv" style="width: 600px; height: 560px;"></div>
+    <div id="mydiv" style="width: 900px; height: 560px;"></div>
   </body>
 </html>

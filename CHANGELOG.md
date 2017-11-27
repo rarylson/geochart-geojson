@@ -1,6 +1,12 @@
 Changelog
 =========
 
+1.3.1
+-----
+
+- **Fix:** Datatables with zero entries are properly handled;
+- **Fix:** Invalid features now generates a warning and are properly handled.
+
 1.3.0
 -----
 
