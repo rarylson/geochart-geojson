@@ -218,6 +218,11 @@ var geochart_geojson = {};
     this.data_ = data;
     this.options_ = deepMerge_(context.GeoChart.prototype.DEFAULT_OPTIONS, options);
 
+    // Check if datatable is valid
+    if (this.data_.getNumberOfColumns() !== 2) {
+      throw new Error("Incompatible datatable (must have two columns)");
+    }
+
     // Create the Google Maps object
     var maps_options = this.getMapsOptions_();
     // TODO We could implement custom zooming when mapsBackground = "none" using
@@ -231,23 +236,29 @@ var geochart_geojson = {};
       var min = Number.MAX_VALUE;
       var max = -Number.MAX_VALUE;
 
-      // Populate the feature "data-" properties
+      // Process the datatable values
       for (var row = 0; row < this.data_.getNumberOfRows(); row++) {
         var id = this.data_.getValue(row, 0);
         var value = this.data_.getValue(row, 1);
-        var feature = this.map_.data.getFeatureById(id);
 
-        // Also keep track of min and max values
+        // Keep track of min and max values
         if (value < min) {
           min = value;
         }
         if (value > max) {
           max = value;
         }
-        feature.setProperty("data-row", row);
-        feature.setProperty("data-id", id);
-        feature.setProperty("data-label", this.data_.getColumnLabel(1));
-        feature.setProperty("data-value", value);
+
+        // Populate the feature "data-" properties
+        var feature = this.map_.data.getFeatureById(id);
+        if (feature) {
+          feature.setProperty("data-row", row);
+          feature.setProperty("data-id", id);
+          feature.setProperty("data-label", this.data_.getColumnLabel(1));
+          feature.setProperty("data-value", value);
+        } else {
+          console.warn('Feature "' + id + '" not found');
+        }
       }
       this.min_ = min;
       this.max_ = max;
@@ -258,7 +269,8 @@ var geochart_geojson = {};
       // Create the legend
       // Note that if the option `legend` is set to `"none"`, the legend
       // with be disabled.
-      if (this.options_.legend !== "none") {
+      // The legend will also be disabled if the datatable is empty.
+      if (this.options_.legend !== "none" && this.data_.getNumberOfRows()) {
         var control_position = null;
 
         this.legend_ = new Legend(this);
