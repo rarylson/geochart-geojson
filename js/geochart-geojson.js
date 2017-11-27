@@ -217,6 +217,11 @@ GeoChart.prototype.draw = function(data, options={}) {
   this.options_ = deepMerge_(
       context.GeoChart.prototype.DEFAULT_OPTIONS, options);
 
+  // Check if datatable is valid
+  if (this.data_.getNumberOfColumns() !== 2) {
+    throw new Error("Incompatible datatable (must have two columns)");
+  }
+
   // Create the Google Maps object
   var maps_options = this.getMapsOptions_();
   // TODO We could implement custom zooming when mapsBackground = "none" using
@@ -259,7 +264,8 @@ GeoChart.prototype.draw = function(data, options={}) {
         // Create the legend
         // Note that if the option `legend` is set to `"none"`, the legend
         // with be disabled.
-        if (this.options_.legend !== "none") {
+        // The legend will also be disabled if the datatable is empty.
+        if (this.options_.legend !== "none" && this.data_.getNumberOfRows()) {
           var control_position = null;
  
           this.legend_ = new Legend(this);
