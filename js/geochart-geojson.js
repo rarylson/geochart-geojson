@@ -134,6 +134,7 @@ var GeoChart = function(container) {
 // Default GeoChart options
 // TODO Document each option.
 GeoChart.prototype.DEFAULT_OPTIONS = {
+  backgroundColor: "#ffffff",
   colorAxis: {
     colors: ["#efe6dc", "#109618"],
     strokeColors: ["#cccccc", "#888888"],
@@ -187,11 +188,12 @@ GeoChart.prototype.DEFAULT_OPTIONS = {
 GeoChart.prototype.getMapsOptions_ = function() {
   var maps_options = this.options_.mapsOptions;
 
+  maps_options.backgroundColor = this.options_.backgroundColor;
+
   if (this.options_.mapsBackground === "none") {
     maps_options.styles = [{
       "stylers": [{"visibility": "off"}]
     }];
-    maps_options.backgroundColor = "none";
   } else {
     throw new Error("Invalid `mapsBackground` option");
   }
