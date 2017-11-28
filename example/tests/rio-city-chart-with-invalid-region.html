@@ -5,7 +5,7 @@ vim: set ts=2 sw=2 et :
 <html>
   <head>
     <meta charset="utf-8">
-    <title>Geochart GeoJSON - Rio de Janeiro (city) with only one and invalid feature example page</title>
+    <title>Geochart GeoJSON - Rio de Janeiro (city) example page with an invalid region</title>
 
     <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
     <!--
@@ -27,9 +27,13 @@ vim: set ts=2 sw=2 et :
         data.addColumn("string", "Neighborhood");
         data.addColumn("number", "Value");
         data.addRows([
+          ["Copacabana", 10],
           // Simulating typo error
           // Should be "Ipanema".
-          ["Ipanemanema", 8]
+          ["Ipanemanema", 8],
+          ["Leblon", 8],
+          ["Lapa", 7],
+          ["Centro", 6]
         ]);
 
         // Instantiate our Geochart GeoJSON object
