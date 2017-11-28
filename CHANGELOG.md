@@ -1,6 +1,13 @@
 Changelog
 =========
 
+X.X.X
+-----
+
+- It's possible to change the chart background color;
+- It's possible to disable the tooltip or change its trigger to the region selection;
+- Making the `README.md` example easier to run.
+
 1.3.1
 -----
 
@@ -17,9 +24,8 @@ Changelog
 1.2.0
 -----
 
-- **Fix:** Feature and legend colors now works when the datatable contains a single value (issue #1);
-- It's possible to use color names in options;
-- New examples (that shows specific usage) added.
+- **Fix:** Feature and legend colors now works when the datatable contains a single value;
+- It's possible to use color names in options.
 
 1.1.1
 -----
@@ -38,7 +44,6 @@ Changelog
 - It's possible to set the legend position;
 - Better stroke colors;
 - **Fix**: Custom options now are deep merged (not only shallow merged) with the defaults;
-- A new example: `example/brazil-chart.html`;
 - Some build tools: npm, babel, jslint, httpserver, and others.
 
 0.0.1
