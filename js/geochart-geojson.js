@@ -181,7 +181,6 @@ GeoChart.prototype.DEFAULT_OPTIONS = {
       bold: false,
       italic: false
     },
-    // TODO Implement "selection"
     // Interaction that causes the tooltip to be displayed. Valid options
     // are: "focus", "none" and "selection".
     trigger: "focus"
@@ -366,7 +365,7 @@ GeoChart.prototype.draw = function(data, options={}) {
     if (event.feature !== this.feature_selected_) {
       this.map_.data.revertStyle();
     }
-    if (this.tooltip_) {
+    if (this.tooltip_ && this.options_.tooltip.trigger === "focus") {
       this.tooltip_.undrawTooltip();
     }
     if (this.legend_) {
@@ -375,7 +374,7 @@ GeoChart.prototype.draw = function(data, options={}) {
   }.bind(this));
 
   this.map_.data.addListener("mousemove", function(event) {
-    if (this.tooltip_ &&
+    if (this.tooltip_ && this.options_.tooltip.trigger === "focus" &&
         event.feature.getProperty("data-value") !== undefined) {
       this.tooltip_.drawTooltip(event.feature, event.latLng);
     }
@@ -386,8 +385,14 @@ GeoChart.prototype.draw = function(data, options={}) {
     if (event.feature !== this.feature_selected_) {
       if (event.feature.getProperty("data-value") !== undefined) {
         this.selectFeature_(event.feature);
+        if (this.tooltip_ && this.options_.tooltip.trigger === "selection") {
+          this.tooltip_.drawTooltip(event.feature);
+        }
       } else {
         this.unselectFeature_();
+        if (this.tooltip_ && this.options_.tooltip.trigger === "selection") {
+          this.tooltip_.undrawTooltip();
+        }
       }
     }
   }.bind(this));
@@ -395,6 +400,9 @@ GeoChart.prototype.draw = function(data, options={}) {
   this.map_.addListener("click", function(event) {
     this.map_.data.revertStyle();
     this.unselectFeature_();
+    if (this.tooltip_ && this.options_.tooltip.trigger === "selection") {
+      this.tooltip_.undrawTooltip();
+    }
   }.bind(this));
 
 };
@@ -720,7 +728,11 @@ Tooltip.prototype.draw = function() {
 };
 
 // Draw tooltip of a feature in the chart
-Tooltip.prototype.drawTooltip = function(feature, latLng) {
+//
+// The tooltip will be drawn near the `latLng` point (with a small offset).
+// If `latLng` is null, however, it will be drawn at the center of the
+// feature.
+Tooltip.prototype.drawTooltip = function(feature, latLng=null) {
   // Update text
   let id = feature.getId();
   if (id !== this.id_span_.innerText) {
@@ -730,22 +742,39 @@ Tooltip.prototype.drawTooltip = function(feature, latLng) {
   }
 
   // Set positioning
-  let s = TOOLTIP_OFFSET;
-  let px = this.getProjection().fromLatLngToDivPixel(latLng);
-  let w = this.div_.offsetWidth;
-  let h = this.div_.offsetHeight;
   let top = 0;
   let left = 0;
-  // Start with div up and left
-  top = px.y - s - h;
-  left = px.x - s - w;
-  // Change div side if necessary
-  if (top < 0) {
-    top = px.y + s;
+  let w = this.div_.offsetWidth;
+  let h = this.div_.offsetHeight;
+
+  // Offset from `latLng` case
+  if (latLng) {
+    let s = TOOLTIP_OFFSET;
+    let px = this.getProjection().fromLatLngToDivPixel(latLng);
+    // Start with div up and left
+    top = px.y - s - h;
+    left = px.x - s - w;
+    // Change div side if necessary
+    if (top < 0) {
+      top = px.y + s;
+    }
+    if (left < 0) {
+      left = px.x + s;
+    }
+  // Center of the feature case
+  //
+  // See: https://stackoverflow.com/questions/3081021/how-to-get-the-center- \
+  //     of-a-polygon-in-google-maps-v3
+  } else {
+    let bounds = new google.maps.LatLngBounds();
+    feature.getGeometry().forEachLatLng(function(latLng) {
+      bounds.extend(latLng);
+    });
+    let px = this.getProjection().fromLatLngToDivPixel(bounds.getCenter());
+    top = px.y - h / 2;
+    left = px.x - w / 2;
   }
-  if (left < 0) {
-    left = px.x + s;
-  }
+
   this.div_.style.top = top + "px";
   this.div_.style.left = left + "px";
 
