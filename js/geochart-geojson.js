@@ -181,7 +181,10 @@ GeoChart.prototype.DEFAULT_OPTIONS = {
       bold: false,
       italic: false
     },
-    trigger: "focus" // TODO Implement
+    // TODO Implement "selection"
+    // Interaction that causes the tooltip to be displayed. Valid options
+    // are: "focus", "none" and "selection".
+    trigger: "focus"
   }
 };
 
@@ -290,7 +293,11 @@ GeoChart.prototype.draw = function(data, options={}) {
         }
 
         // Create the tooltip
-        this.tooltip_ = new Tooltip(this);
+        // Note that if the option `tooltip.trigger` is set to `"none"`, the
+        // tooltip will be disabled.
+        if (this.options_.tooltip.trigger !== "none") {
+          this.tooltip_ = new Tooltip(this);
+        }
 
         // Trigger the ready event
         // See: https://developers.google.com/chart/interactive/docs/dev/
@@ -359,14 +366,17 @@ GeoChart.prototype.draw = function(data, options={}) {
     if (event.feature !== this.feature_selected_) {
       this.map_.data.revertStyle();
     }
-    this.tooltip_.undrawTooltip();
+    if (this.tooltip_) {
+      this.tooltip_.undrawTooltip();
+    }
     if (this.legend_) {
       this.legend_.undrawIndicator();
     }
   }.bind(this));
 
   this.map_.data.addListener("mousemove", function(event) {
-    if (event.feature.getProperty("data-value") !== undefined) {
+    if (this.tooltip_ &&
+        event.feature.getProperty("data-value") !== undefined) {
       this.tooltip_.drawTooltip(event.feature, event.latLng);
     }
   }.bind(this));
