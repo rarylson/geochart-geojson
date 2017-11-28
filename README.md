@@ -32,7 +32,7 @@ The follow example shows an HTML page that draws a Geochart GeoJSON of the Rio d
 
     <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD-9tSrke72PouQMnMX-a7eZSW0jkFMBWY"></script>
-    <script type="text/javascript" src="geochart-geojson.min.js"></script>
+    <script type="text/javascript" src="https://cdn.rawgit.com/rarylson/geochart-geojson/master/build/geochart-geojson.min.js"></script>
 
     <script type="text/javascript">
       google.charts.load("current");
@@ -61,7 +61,7 @@ The follow example shows an HTML page that draws a Geochart GeoJSON of the Rio d
             center: {lat: -22.15, lng: -42.9},
             zoom: 8
           },
-          geoJson: "rio-state.geojson",
+          geoJson: "https://cdn.rawgit.com/rarylson/geochart-geojson/master/example/rio-state.geojson",
           geoJsonOptions: {
             idPropertyName: "name"
           }
