@@ -46,6 +46,9 @@ var LEGEND_INDICATOR_LEFT_OFFSET = -6;
 
 // Auxiliary functions
 
+// Process a Google Chart `textStyle` option
+//
+// Converts a Google Chart `textStyle` option into a valid CSS style object.
 function processTextStyle_(textStyle) {
   var style = {};
 
@@ -89,7 +92,7 @@ function deepMerge_(obj1, obj2) {
  * These charts are very similar to the Google Charts geochart, but with
  * GeoJSON support.
  *
- * Code based on many Google Charts and Google Maps API guides and references.
+ * Code based on Google Charts and Google Maps API guides and references.
  *
  * See:
  *
@@ -106,15 +109,18 @@ function deepMerge_(obj1, obj2) {
 var GeoChart = function(container) {
   this.container = container;
 
+  // The inner datatable
   this.data_ = null;
+  // The inner chart options
   this.options_ = null;
   // The inner Google Maps map object
   // This object will hold the GeoJSON map (in its overlay layer), the tooltip
-  // overlay and the color axis.
+  // overlay and the legend.
   // Optionally, it will also handle the underlying map layer (map, satellite
   // or simple map) and the map control (zoom, map drag). These features are
   // disabled by default.
   this.map_ = null;
+  // Inner objects (`ColorAxis`, `Tooltip` and `Legend`)
   this.color_axis_ = null;
   this.tooltip_ = null;
   this.legend_ = null;
@@ -328,6 +334,8 @@ GeoChart.prototype.draw = function(data, options={}) {
   }.bind(this));
 
   // Mouse event handlers
+  //
+  // They handle the highlight and selection events.
 
   this.map_.data.addListener("mouseover", function(event) {
     var highlighted_style = Object.assign(
@@ -383,7 +391,8 @@ GeoChart.prototype.getRelativeValue_ = function(value) {
   return (value - this.min_) / (this.max_ - this.min_);
 };
 
-// Entry selected by the user
+// Get the selected data
+//
 // See: https://developers.google.com/chart/interactive/docs/reference
 //     #getselection
 GeoChart.prototype.getSelection = function() {
@@ -397,6 +406,10 @@ GeoChart.prototype.getSelection = function() {
   }
 };
 
+// Set the selected data
+//
+// See: https://developers.google.com/chart/interactive/docs/reference
+//     #setselection
 GeoChart.prototype.setSelection = function(selection) {
   var id = "";
   var feature = null;
@@ -429,8 +442,8 @@ context.GeoChart = GeoChart;
 
 // ColorAxis for GeoChart GeoJSON
 //
-// It's an abstraction that implements the color processment needed to color
-// the features and the legend.
+// It's an abstraction that implements the color processment needed to
+// colorizing the features and the legend.
 //
 // The color conversion functions are based on a `njvack`'s Github Gist.
 //
@@ -462,6 +475,28 @@ ColorAxis.prototype.initCanvas_ = function() {
   context = canvas.getContext("2d");
 
   this.canvas_context_ = context;
+};
+
+ColorAxis.prototype.initColors_ = function() {
+  var color_axis_options_ = this.geo_chart_.options_.colorAxis;
+
+  this.colors_ = [
+    this.toRgbArray(color_axis_options_.colors[0]),
+    this.toRgbArray(color_axis_options_.colors[1])
+  ];
+  this.stroke_colors_ = [
+    this.toRgbArray(color_axis_options_.strokeColors[0]),
+    this.toRgbArray(color_axis_options_.strokeColors[1])
+  ];
+
+  // Single value case
+  // In this case, use a single color (the color of the max value).
+  if (this.geo_chart_.min_ === this.geo_chart_.max_) {
+    this.single_value = true;
+
+    this.colors_[0] = this.colors_[1];
+    this.stroke_colors_[0] = this.stroke_colors_[1];
+  }
 };
 
 // Convert number to hex string
@@ -552,32 +587,10 @@ ColorAxis.prototype.toHex = function(color) {
       this.numToHexStr_(a[2]);
 };
 
-ColorAxis.prototype.initColors_ = function() {
-  var color_axis_options_ = this.geo_chart_.options_.colorAxis;
-
-  this.colors_ = [
-    this.toRgbArray(color_axis_options_.colors[0]),
-    this.toRgbArray(color_axis_options_.colors[1])
-  ];
-  this.stroke_colors_ = [
-    this.toRgbArray(color_axis_options_.strokeColors[0]),
-    this.toRgbArray(color_axis_options_.strokeColors[1])
-  ];
-
-  // Single value case
-  // In this case, use a single color (the color of the max value).
-  if (this.geo_chart_.min_ === this.geo_chart_.max_) {
-    this.single_value = true;
-
-    this.colors_[0] = this.colors_[1];
-    this.stroke_colors_[0] = this.stroke_colors_[1];
-  }
-};
-
-// An array with two colors (fill and stroke)
+// Get the colors (fill and stroke) of a relative position between min/max
 //
-// The colors represent a relative position in the color axis gradients (fill
-// and stroke).
+// The colors will be an array with two colors (fill and stroke) and they
+// represent the colors of the relative position in the color axis gradients.
 ColorAxis.prototype.getRelativeColors = function(rel_pos) {
   var rel_colors = [];
 
@@ -605,6 +618,7 @@ ColorAxis.prototype.getRelativeColors = function(rel_pos) {
 };
 
 // Generate the background gradient CSS string
+//
 // See: https://stackoverflow.com/a/16219600
 ColorAxis.prototype.getGradientCssStr = function() {
   var gradient_string =
@@ -688,10 +702,11 @@ Tooltip.prototype.onAdd = function() {
 };
 
 Tooltip.prototype.draw = function() {
-  // Do not draw nothing at first
+  // Do not draw anything at first
   return;
 };
 
+// Draw tooltip of a feature in the chart
 Tooltip.prototype.drawTooltip = function(feature, latLng) {
   // Update text
   var id = feature.getId();
@@ -725,6 +740,7 @@ Tooltip.prototype.drawTooltip = function(feature, latLng) {
   this.div_.style.visibility = "visible";
 };
 
+// Undraw the tooltip
 Tooltip.prototype.undrawTooltip = function() {
   this.div_.style.visibility = "hidden";
 };
@@ -775,6 +791,8 @@ Legend.prototype.draw_ = function() {
   legend_div_inner.style.height = LEGEND_HEIGHT + "px";
   legend_div_inner.style.padding = "0";
   legend_div_inner.style.margin = "0";
+  // Add the background CSS string to the style property
+  //
   // See: https://stackoverflow.com/a/16219600
   legend_div_inner.setAttribute(
       "style",
@@ -802,15 +820,19 @@ Legend.prototype.draw_ = function() {
   this.indicator_span_ = indicator_span;
 };
 
+// Get the div container of the legend
 Legend.prototype.getContainer = function() {
   return this.div_;
 };
 
+// Draw the indicator at the right place above the legend
+//
+// The indicator will be an arrow.
 Legend.prototype.drawIndicator = function(feature) {
   var relative_value = 0;
 
   // Single value case
-  // In this case, put the indicator in the middle.
+  // In this case, put the indicator in the middle of the legend.
   if (this.geo_chart_.color_axis_.single_value) {
     relative_value = 0.5;
   // Normal case
