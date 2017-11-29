@@ -6,6 +6,7 @@ X.X.X
 
 - It's possible to change the chart background color;
 - It's possible to disable the tooltip or change its trigger to the region selection;
+- Datatable can have regions without values (these regions will use the default color);
 - Making the `README.md` example easier to run.
 
 1.3.1

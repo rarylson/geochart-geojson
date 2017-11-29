@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<!--
+vim: set ts=2 sw=2 et :
+-->
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Geochart GeoJSON - Brazil example page using regions without values</title>
+
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <!--
+      Note: its recommended that you get a MAPS_API_KEY to your project.
+      See: https://developers.google.com/chart/interactive/docs/basic_load_libs#load-settings
+    -->
+    <!--<script src="https://maps.googleapis.com/maps/api/js?key=MAPS_API_KEY"></script>-->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD-9tSrke72PouQMnMX-a7eZSW0jkFMBWY"></script>
+    <script type="text/javascript" src="../../js/geochart-geojson.js"></script>
+
+    <script type="text/javascript">
+      google.charts.load("current");
+      google.charts.setOnLoadCallback(drawVisualization);
+
+      function drawVisualization() {
+
+        // Create and populate a data table
+        var data = new google.visualization.DataTable();
+        data.addColumn("string", "State");
+        data.addRows([
+          ["São Paulo"],
+          ["Rio de Janeiro"],
+          ["Paraná"],
+          ["Minas Gerais"],
+          ["Rio Grande do Sul"],
+          ["Santa Catarina"],
+          ["Ceará"],
+          ["Pernambuco"],
+          ["Distrito Federal"],
+          ["Bahia"],
+          ["Goiás"],
+          ["Espírito Santo"]
+        ]);
+
+        // Instantiate our Geochart GeoJSON object
+        var vis = new geochart_geojson.GeoChart(document.getElementById("mydiv"));
+
+        // Set Geochart GeoJSON options
+        var options = {
+          mapsOptions: {
+            center: {lat: -16, lng: -53},
+            zoom: 4
+          },
+          geoJson: "../brazil.geojson",
+          geoJsonOptions: {
+            idPropertyName: "name"
+          },
+          defaultColor: "#99b2e5",
+          defaultStrokeColor: "#3366cc"
+        };
+
+        vis.draw(data, options);
+      }
+    </script>
+  </head>
+
+  <body>
+    <div id="mydiv" style="width: 600px; height: 560px;"></div>
+  </body>
+</html>

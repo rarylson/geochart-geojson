@@ -129,6 +129,8 @@ let GeoChart = function(container) {
   this.max_ = 0;
   // Feature selected by the user
   this.feature_selected_ = null;
+  // Datatable has (or doesn't have) values
+  this.data_has_values_ = true;
 };
 
 // Default GeoChart options
@@ -141,8 +143,8 @@ GeoChart.prototype.DEFAULT_OPTIONS = {
   },
   datalessRegionColor: "#f5f5f5",
   datalessRegionStrokeColor: "#cccccc",
-  defaultColor: "#267114", // TODO Implement
-  defaultStrokeColor: "#666666", // TODO Implement
+  defaultColor: "#267114",
+  defaultStrokeColor: "#666666",
   displayMode: "regions", // TODO Implement
   featureStyle: {
     fillOpacity: 1,
@@ -227,9 +229,13 @@ GeoChart.prototype.draw = function(data, options={}) {
   this.options_ = deepMerge_(
       context.GeoChart.prototype.DEFAULT_OPTIONS, options);
 
-  // Check if datatable is valid
-  if (this.data_.getNumberOfColumns() !== 2) {
-    throw new Error("Incompatible datatable (must have two columns)");
+  // Check if datatable has values
+  if (this.data_.getNumberOfColumns() === 2) {
+    this.data_has_values_ = true;
+  } else if (this.data_.getNumberOfColumns() === 1) {
+    this.data_has_values_ = false;
+  } else {
+    throw new Error("Incompatible datatable (must have one or two columns)");
   }
 
   // Create the Google Maps object
@@ -250,23 +256,29 @@ GeoChart.prototype.draw = function(data, options={}) {
         // Process the datatable values
         for (let row = 0; row < this.data_.getNumberOfRows(); row++) {
           let id = this.data_.getValue(row, 0);
-          let value = this.data_.getValue(row, 1);
+          let value = 0;
 
-          // Keep track of min and max values
-          if (value < min) {
-            min = value;
+          if (this.data_has_values_) {
+            value = this.data_.getValue(row, 1);
+            // Keep track of min and max values
+            if (value < min) {
+              min = value;
+            }
+            if (value > max) {
+              max = value;
+            }
           }
-          if (value > max) {
-            max = value;
-          }
-          
+
           // Populate the feature "data-" properties
           let feature = this.map_.data.getFeatureById(id);
           if (feature) {
+            feature.setProperty("data-is-data", true);
             feature.setProperty("data-row", row);
             feature.setProperty("data-id", id);
-            feature.setProperty("data-label", this.data_.getColumnLabel(1));
-            feature.setProperty("data-value", value);
+            if (this.data_has_values_) {
+              feature.setProperty("data-label", this.data_.getColumnLabel(1));
+              feature.setProperty("data-value", value);
+            }
           } else {
             console.warn('Region "' + id + '" not found');
           }
@@ -280,8 +292,10 @@ GeoChart.prototype.draw = function(data, options={}) {
         // Create the legend
         // Note that if the option `legend` is set to `"none"`, the legend
         // with be disabled.
-        // The legend will also be disabled if the datatable is empty.
-        if (this.options_.legend !== "none" && this.data_.getNumberOfRows()) {
+        // The legend will also be disabled if the datatable doesn't have
+        // values or if its is empty.
+        if (this.options_.legend !== "none" &&
+            this.data_has_values_ && this.data_.getNumberOfRows()) {
           let control_position = null;
  
           this.legend_ = new Legend(this);
@@ -318,18 +332,28 @@ GeoChart.prototype.draw = function(data, options={}) {
 
     // Feature with data style
     // Colorize the features with data (using the gradient colors)
-    if (feature.getProperty("data-value") !== undefined) {
-      let relative_value = this.getRelativeValue_(
-          feature.getProperty("data-value"));
+    if (feature.getProperty("data-is-data")) {
+      // Feature has value
+      if (feature.getProperty("data-value") !== undefined) {
+        let relative_value = this.getRelativeValue_(
+            feature.getProperty("data-value"));
 
-      let colors_to_fill = this.color_axis_.getRelativeColors(relative_value);
+        let colors_to_fill = this.color_axis_.getRelativeColors(
+            relative_value);
 
-      style = Object.assign(style, {
-        fillColor: this.color_axis_.toHex(colors_to_fill[0]),
-        strokeColor: this.color_axis_.toHex(colors_to_fill[1])
-      });
+        style = Object.assign(style, {
+          fillColor: this.color_axis_.toHex(colors_to_fill[0]),
+          strokeColor: this.color_axis_.toHex(colors_to_fill[1])
+        });
+      // Feature without value
+      } else {
+        style = Object.assign(style, {
+          fillColor: this.options_.defaultColor,
+          strokeColor: this.options_.defaultStrokeColor,
+        });
+      }
 
-      // Selected feature style
+      // Selected feature
       if (feature.getProperty("data-selected")) {
         style = Object.assign(
             style, this.options_.featureStyleHighlighted,
@@ -375,7 +399,7 @@ GeoChart.prototype.draw = function(data, options={}) {
 
   this.map_.data.addListener("mousemove", function(event) {
     if (this.tooltip_ && this.options_.tooltip.trigger === "focus" &&
-        event.feature.getProperty("data-value") !== undefined) {
+        event.feature.getProperty("data-is-data") !== undefined) {
       this.tooltip_.drawTooltip(event.feature, event.latLng);
     }
   }.bind(this));
@@ -383,7 +407,7 @@ GeoChart.prototype.draw = function(data, options={}) {
   this.map_.data.addListener("click", function(event) {
     this.map_.data.revertStyle();
     if (event.feature !== this.feature_selected_) {
-      if (event.feature.getProperty("data-value") !== undefined) {
+      if (event.feature.getProperty("data-is-data") !== undefined) {
         this.selectFeature_(event.feature);
         if (this.tooltip_ && this.options_.tooltip.trigger === "selection") {
           this.tooltip_.drawTooltip(event.feature);
@@ -682,8 +706,13 @@ let Tooltip = function(geoChart) {
 Tooltip.prototype = new google.maps.OverlayView();
 
 Tooltip.prototype.onAdd = function() {
+  let div = null;
+  let id_span = null;
+  let label_span = null;
+  let value_span = null;
+
   // Create the main div
-  let div = document.createElement("div");
+  div = document.createElement("div");
   let div_style = {};
   div_style = Object.assign(
       {}, {position: "absolute", visibility: "hidden"},
@@ -698,21 +727,23 @@ Tooltip.prototype.onAdd = function() {
   // Create the first inner paragraph
   let p1 = document.createElement("p");
   Object.assign(p1.style, p_style);
-  let id_span = document.createElement("span");
+  id_span = document.createElement("span");
   id_span.style.fontWeight = "bold";
   p1.appendChild(id_span);
   div.appendChild(p1);
 
   // Create the second inner paragraph
-  let p2 = document.createElement("p");
-  Object.assign(p2.style, p_style);
-  let label_span = document.createElement("span");
-  let value_span = document.createElement("span");
-  value_span.style.fontWeight = "bold";
-  p2.appendChild(label_span);
-  p2.appendChild(document.createTextNode(": "));
-  p2.appendChild(value_span);
-  div.appendChild(p2);
+  if (this.geo_chart_.data_has_values_) {
+    let p2 = document.createElement("p");
+    Object.assign(p2.style, p_style);
+    label_span = document.createElement("span");
+    value_span = document.createElement("span");
+    value_span.style.fontWeight = "bold";
+    p2.appendChild(label_span);
+    p2.appendChild(document.createTextNode(": "));
+    p2.appendChild(value_span);
+    div.appendChild(p2);
+  }
 
   this.div_ = div;
   this.id_span_ = id_span;
@@ -737,8 +768,10 @@ Tooltip.prototype.drawTooltip = function(feature, latLng=null) {
   let id = feature.getId();
   if (id !== this.id_span_.innerText) {
     this.id_span_.innerText = id;
-    this.label_span_.innerText = feature.getProperty("data-label");
-    this.value_span_.innerText = feature.getProperty("data-value");
+    if (feature.getProperty("data-value") !== undefined) {
+      this.label_span_.innerText = feature.getProperty("data-label");
+      this.value_span_.innerText = feature.getProperty("data-value");
+    }
   }
 
   // Set positioning
