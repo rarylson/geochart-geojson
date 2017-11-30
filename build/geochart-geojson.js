@@ -48,6 +48,9 @@ var geochart_geojson = {};
 
   // Auxiliary functions
 
+  // Process a Google Chart `textStyle` option
+  //
+  // Converts a Google Chart `textStyle` option into a valid CSS style object.
   function processTextStyle_(textStyle) {
     var style = {};
 
@@ -89,7 +92,7 @@ var geochart_geojson = {};
    * These charts are very similar to the Google Charts geochart, but with
    * GeoJSON support.
    *
-   * Code based on many Google Charts and Google Maps API guides and references.
+   * Code based on Google Charts and Google Maps API guides and references.
    *
    * See:
    *
@@ -106,15 +109,18 @@ var geochart_geojson = {};
   var GeoChart = function GeoChart(container) {
     this.container = container;
 
+    // The inner datatable
     this.data_ = null;
+    // The inner chart options
     this.options_ = null;
     // The inner Google Maps map object
     // This object will hold the GeoJSON map (in its overlay layer), the tooltip
-    // overlay and the color axis.
+    // overlay and the legend.
     // Optionally, it will also handle the underlying map layer (map, satellite
     // or simple map) and the map control (zoom, map drag). These features are
     // disabled by default.
     this.map_ = null;
+    // Inner objects (`ColorAxis`, `Tooltip` and `Legend`)
     this.color_axis_ = null;
     this.tooltip_ = null;
     this.legend_ = null;
@@ -123,19 +129,22 @@ var geochart_geojson = {};
     this.max_ = 0;
     // Feature selected by the user
     this.feature_selected_ = null;
+    // Datatable has (or doesn't have) values
+    this.data_has_values_ = true;
   };
 
   // Default GeoChart options
   // TODO Document each option.
   GeoChart.prototype.DEFAULT_OPTIONS = {
+    backgroundColor: "#ffffff",
     colorAxis: {
       colors: ["#efe6dc", "#109618"],
       strokeColors: ["#cccccc", "#888888"]
     },
     datalessRegionColor: "#f5f5f5",
     datalessRegionStrokeColor: "#cccccc",
-    defaultColor: "#267114", // TODO Implement
-    defaultStrokeColor: "#666666", // TODO Implement
+    defaultColor: "#267114",
+    defaultStrokeColor: "#666666",
     displayMode: "regions", // TODO Implement
     featureStyle: {
       fillOpacity: 1,
@@ -174,18 +183,21 @@ var geochart_geojson = {};
         bold: false,
         italic: false
       },
-      trigger: "focus" // TODO Implement
+      // Interaction that causes the tooltip to be displayed. Valid options
+      // are: "focus", "none" and "selection".
+      trigger: "focus"
     }
   };
 
   GeoChart.prototype.getMapsOptions_ = function () {
     var maps_options = this.options_.mapsOptions;
 
+    maps_options.backgroundColor = this.options_.backgroundColor;
+
     if (this.options_.mapsBackground === "none") {
       maps_options.styles = [{
         "stylers": [{ "visibility": "off" }]
       }];
-      maps_options.backgroundColor = "none";
     } else {
       throw new Error("Invalid `mapsBackground` option");
     }
@@ -218,9 +230,13 @@ var geochart_geojson = {};
     this.data_ = data;
     this.options_ = deepMerge_(context.GeoChart.prototype.DEFAULT_OPTIONS, options);
 
-    // Check if datatable is valid
-    if (this.data_.getNumberOfColumns() !== 2) {
-      throw new Error("Incompatible datatable (must have two columns)");
+    // Check if datatable has values
+    if (this.data_.getNumberOfColumns() === 2) {
+      this.data_has_values_ = true;
+    } else if (this.data_.getNumberOfColumns() === 1) {
+      this.data_has_values_ = false;
+    } else {
+      throw new Error("Incompatible datatable (must have one or two columns)");
     }
 
     // Create the Google Maps object
@@ -239,25 +255,31 @@ var geochart_geojson = {};
       // Process the datatable values
       for (var row = 0; row < this.data_.getNumberOfRows(); row++) {
         var id = this.data_.getValue(row, 0);
-        var value = this.data_.getValue(row, 1);
+        var value = 0;
 
-        // Keep track of min and max values
-        if (value < min) {
-          min = value;
-        }
-        if (value > max) {
-          max = value;
+        if (this.data_has_values_) {
+          value = this.data_.getValue(row, 1);
+          // Keep track of min and max values
+          if (value < min) {
+            min = value;
+          }
+          if (value > max) {
+            max = value;
+          }
         }
 
         // Populate the feature "data-" properties
         var feature = this.map_.data.getFeatureById(id);
         if (feature) {
+          feature.setProperty("data-is-data", true);
           feature.setProperty("data-row", row);
           feature.setProperty("data-id", id);
-          feature.setProperty("data-label", this.data_.getColumnLabel(1));
-          feature.setProperty("data-value", value);
+          if (this.data_has_values_) {
+            feature.setProperty("data-label", this.data_.getColumnLabel(1));
+            feature.setProperty("data-value", value);
+          }
         } else {
-          console.warn('Feature "' + id + '" not found');
+          console.warn('Region "' + id + '" not found');
         }
       }
       this.min_ = min;
@@ -269,8 +291,9 @@ var geochart_geojson = {};
       // Create the legend
       // Note that if the option `legend` is set to `"none"`, the legend
       // with be disabled.
-      // The legend will also be disabled if the datatable is empty.
-      if (this.options_.legend !== "none" && this.data_.getNumberOfRows()) {
+      // The legend will also be disabled if the datatable doesn't have
+      // values or if its is empty.
+      if (this.options_.legend !== "none" && this.data_has_values_ && this.data_.getNumberOfRows()) {
         var control_position = null;
 
         this.legend_ = new Legend(this);
@@ -279,7 +302,11 @@ var geochart_geojson = {};
       }
 
       // Create the tooltip
-      this.tooltip_ = new Tooltip(this);
+      // Note that if the option `tooltip.trigger` is set to `"none"`, the
+      // tooltip will be disabled.
+      if (this.options_.tooltip.trigger !== "none") {
+        this.tooltip_ = new Tooltip(this);
+      }
 
       // Trigger the ready event
       // See: https://developers.google.com/chart/interactive/docs/dev/
@@ -298,17 +325,26 @@ var geochart_geojson = {};
 
       // Feature with data style
       // Colorize the features with data (using the gradient colors)
-      if (feature.getProperty("data-value") !== undefined) {
-        var relative_value = this.getRelativeValue_(feature.getProperty("data-value"));
+      if (feature.getProperty("data-is-data")) {
+        // Feature has value
+        if (feature.getProperty("data-value") !== undefined) {
+          var relative_value = this.getRelativeValue_(feature.getProperty("data-value"));
 
-        var colors_to_fill = this.color_axis_.getRelativeColors(relative_value);
+          var colors_to_fill = this.color_axis_.getRelativeColors(relative_value);
 
-        style = Object.assign(style, {
-          fillColor: this.color_axis_.toHex(colors_to_fill[0]),
-          strokeColor: this.color_axis_.toHex(colors_to_fill[1])
-        });
+          style = Object.assign(style, {
+            fillColor: this.color_axis_.toHex(colors_to_fill[0]),
+            strokeColor: this.color_axis_.toHex(colors_to_fill[1])
+          });
+          // Feature without value
+        } else {
+          style = Object.assign(style, {
+            fillColor: this.options_.defaultColor,
+            strokeColor: this.options_.defaultStrokeColor
+          });
+        }
 
-        // Selected feature style
+        // Selected feature
         if (feature.getProperty("data-selected")) {
           style = Object.assign(style, this.options_.featureStyleHighlighted, { zIndex: SELECTED_Z_INDEX });
         }
@@ -318,13 +354,12 @@ var geochart_geojson = {};
     }.bind(this));
 
     // Mouse event handlers
+    //
+    // They handle the highlight and selection events.
 
     this.map_.data.addListener("mouseover", function (event) {
-      var highlighted_style = Object.assign({}, this.options_.featureStyleHighlighted, { zIndex: HIGHLIGHTED_Z_INDEX });
-
       if (event.feature !== this.feature_selected_) {
-        this.map_.data.revertStyle();
-        this.map_.data.overrideStyle(event.feature, highlighted_style);
+        this.highlightFeature_(event.feature);
       }
       if (event.feature.getProperty("data-value") !== undefined) {
         if (this.legend_) {
@@ -337,40 +372,67 @@ var geochart_geojson = {};
       if (event.feature !== this.feature_selected_) {
         this.map_.data.revertStyle();
       }
-      this.tooltip_.undrawTooltip();
+      if (this.tooltip_ && this.options_.tooltip.trigger === "focus") {
+        this.tooltip_.undrawTooltip();
+      }
       if (this.legend_) {
         this.legend_.undrawIndicator();
       }
     }.bind(this));
 
     this.map_.data.addListener("mousemove", function (event) {
-      if (event.feature.getProperty("data-value") !== undefined) {
+      if (this.tooltip_ && this.options_.tooltip.trigger === "focus" && event.feature.getProperty("data-is-data") !== undefined) {
         this.tooltip_.drawTooltip(event.feature, event.latLng);
       }
     }.bind(this));
 
     this.map_.data.addListener("click", function (event) {
       this.map_.data.revertStyle();
+      // Select the feature
       if (event.feature !== this.feature_selected_) {
-        if (event.feature.getProperty("data-value") !== undefined) {
+        if (event.feature.getProperty("data-is-data") !== undefined) {
           this.selectFeature_(event.feature);
+          if (this.tooltip_ && this.options_.tooltip.trigger === "selection") {
+            this.tooltip_.drawTooltip(event.feature);
+          }
         } else {
           this.unselectFeature_();
+          if (this.tooltip_ && this.options_.tooltip.trigger === "selection") {
+            this.tooltip_.undrawTooltip();
+          }
         }
+        // Unselect the feature if its already selected
+      } else {
+        this.unselectFeature_();
+        if (this.tooltip_ && this.options_.tooltip.trigger === "selection") {
+          this.tooltip_.undrawTooltip();
+        }
+        this.highlightFeature_(event.feature);
       }
     }.bind(this));
 
     this.map_.addListener("click", function (event) {
       this.map_.data.revertStyle();
       this.unselectFeature_();
+      if (this.tooltip_ && this.options_.tooltip.trigger === "selection") {
+        this.tooltip_.undrawTooltip();
+      }
     }.bind(this));
+  };
+
+  GeoChart.prototype.highlightFeature_ = function (feature) {
+    var highlighted_style = Object.assign({}, this.options_.featureStyleHighlighted, { zIndex: HIGHLIGHTED_Z_INDEX });
+
+    this.map_.data.revertStyle();
+    this.map_.data.overrideStyle(feature, highlighted_style);
   };
 
   GeoChart.prototype.getRelativeValue_ = function (value) {
     return (value - this.min_) / (this.max_ - this.min_);
   };
 
-  // Entry selected by the user
+  // Get the selected data
+  //
   // See: https://developers.google.com/chart/interactive/docs/reference
   //     #getselection
   GeoChart.prototype.getSelection = function () {
@@ -384,6 +446,10 @@ var geochart_geojson = {};
     }
   };
 
+  // Set the selected data
+  //
+  // See: https://developers.google.com/chart/interactive/docs/reference
+  //     #setselection
   GeoChart.prototype.setSelection = function (selection) {
     var id = "";
     var feature = null;
@@ -415,8 +481,8 @@ var geochart_geojson = {};
 
   // ColorAxis for GeoChart GeoJSON
   //
-  // It's an abstraction that implements the color processment needed to color
-  // the features and the legend.
+  // It's an abstraction that implements the color processment needed to
+  // colorizing the features and the legend.
   //
   // The color conversion functions are based on a `njvack`'s Github Gist.
   //
@@ -448,6 +514,22 @@ var geochart_geojson = {};
     context = canvas.getContext("2d");
 
     this.canvas_context_ = context;
+  };
+
+  ColorAxis.prototype.initColors_ = function () {
+    var color_axis_options_ = this.geo_chart_.options_.colorAxis;
+
+    this.colors_ = [this.toRgbArray(color_axis_options_.colors[0]), this.toRgbArray(color_axis_options_.colors[1])];
+    this.stroke_colors_ = [this.toRgbArray(color_axis_options_.strokeColors[0]), this.toRgbArray(color_axis_options_.strokeColors[1])];
+
+    // Single value case
+    // In this case, use a single color (the color of the max value).
+    if (this.geo_chart_.min_ === this.geo_chart_.max_) {
+      this.single_value = true;
+
+      this.colors_[0] = this.colors_[1];
+      this.stroke_colors_[0] = this.stroke_colors_[1];
+    }
   };
 
   // Convert number to hex string
@@ -536,31 +618,16 @@ var geochart_geojson = {};
     return "#" + this.numToHexStr_(a[0]) + this.numToHexStr_(a[1]) + this.numToHexStr_(a[2]);
   };
 
-  ColorAxis.prototype.initColors_ = function () {
-    var color_axis_options_ = this.geo_chart_.options_.colorAxis;
-
-    this.colors_ = [this.toRgbArray(color_axis_options_.colors[0]), this.toRgbArray(color_axis_options_.colors[1])];
-    this.stroke_colors_ = [this.toRgbArray(color_axis_options_.strokeColors[0]), this.toRgbArray(color_axis_options_.strokeColors[1])];
-
-    // Single value case
-    // In this case, use a single color (the color of the max value).
-    if (this.geo_chart_.min_ === this.geo_chart_.max_) {
-      this.single_value = true;
-
-      this.colors_[0] = this.colors_[1];
-      this.stroke_colors_[0] = this.stroke_colors_[1];
-    }
-  };
-
-  // An array with two colors (fill and stroke)
+  // Get the colors (fill and stroke) of a relative position between min/max
   //
-  // The colors represent a relative position in the color axis gradients (fill
-  // and stroke).
+  // The colors will be an array with two colors (fill and stroke) and they
+  // represent the colors of the relative position in the color axis gradients.
   ColorAxis.prototype.getRelativeColors = function (rel_pos) {
     var rel_colors = [];
 
     function get_relative_color(colors, rel_pos) {
       var rel_color = [];
+
       for (var i = 0; i < 3; i++) {
         rel_color[i] = Math.round((colors[1][i] - colors[0][i]) * rel_pos + colors[0][i]);
       }
@@ -579,6 +646,7 @@ var geochart_geojson = {};
   };
 
   // Generate the background gradient CSS string
+  //
   // See: https://stackoverflow.com/a/16219600
   ColorAxis.prototype.getGradientCssStr = function () {
     var gradient_string = "background-image: -o-linear-gradient(left, {c1}, {c2}); " + "background-image: -moz-linear-gradient(left, {c1}, {c2}); " + "background-image: -webkit-linear-gradient(left, {c1}, {c2}); " + "background-image: -ms-linear-gradient(left, {c1}, {c2}); " + "background: linear-gradient(left, {c1}, {c2})";
@@ -613,8 +681,13 @@ var geochart_geojson = {};
   Tooltip.prototype = new google.maps.OverlayView();
 
   Tooltip.prototype.onAdd = function () {
+    var div = null;
+    var id_span = null;
+    var label_span = null;
+    var value_span = null;
+
     // Create the main div
-    var div = document.createElement("div");
+    div = document.createElement("div");
     var div_style = {};
     div_style = Object.assign({}, { position: "absolute", visibility: "hidden" }, TOOLTIP_STYLE, { zIndex: TOOLTIP_Z_INDEX });
     Object.assign(div.style, div_style);
@@ -624,21 +697,23 @@ var geochart_geojson = {};
     // Create the first inner paragraph
     var p1 = document.createElement("p");
     Object.assign(p1.style, p_style);
-    var id_span = document.createElement("span");
+    id_span = document.createElement("span");
     id_span.style.fontWeight = "bold";
     p1.appendChild(id_span);
     div.appendChild(p1);
 
     // Create the second inner paragraph
-    var p2 = document.createElement("p");
-    Object.assign(p2.style, p_style);
-    var label_span = document.createElement("span");
-    var value_span = document.createElement("span");
-    value_span.style.fontWeight = "bold";
-    p2.appendChild(label_span);
-    p2.appendChild(document.createTextNode(": "));
-    p2.appendChild(value_span);
-    div.appendChild(p2);
+    if (this.geo_chart_.data_has_values_) {
+      var p2 = document.createElement("p");
+      Object.assign(p2.style, p_style);
+      label_span = document.createElement("span");
+      value_span = document.createElement("span");
+      value_span.style.fontWeight = "bold";
+      p2.appendChild(label_span);
+      p2.appendChild(document.createTextNode(": "));
+      p2.appendChild(value_span);
+      div.appendChild(p2);
+    }
 
     this.div_ = div;
     this.id_span_ = id_span;
@@ -649,36 +724,62 @@ var geochart_geojson = {};
   };
 
   Tooltip.prototype.draw = function () {
-    // Do not draw nothing at first
+    // Do not draw anything at first
     return;
   };
 
-  Tooltip.prototype.drawTooltip = function (feature, latLng) {
+  // Draw tooltip of a feature in the chart
+  //
+  // The tooltip will be drawn near the `latLng` point (with a small offset).
+  // If `latLng` is null, however, it will be drawn at the center of the
+  // feature.
+  Tooltip.prototype.drawTooltip = function (feature) {
+    var latLng = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
+
     // Update text
     var id = feature.getId();
     if (id !== this.id_span_.innerText) {
       this.id_span_.innerText = id;
-      this.label_span_.innerText = feature.getProperty("data-label");
-      this.value_span_.innerText = feature.getProperty("data-value");
+      if (feature.getProperty("data-value") !== undefined) {
+        this.label_span_.innerText = feature.getProperty("data-label");
+        this.value_span_.innerText = feature.getProperty("data-value");
+      }
     }
 
     // Set positioning
-    var s = TOOLTIP_OFFSET;
-    var px = this.getProjection().fromLatLngToDivPixel(latLng);
-    var w = this.div_.offsetWidth;
-    var h = this.div_.offsetHeight;
     var top = 0;
     var left = 0;
-    // Start with div up and left
-    top = px.y - s - h;
-    left = px.x - s - w;
-    // Change div side if necessary
-    if (top < 0) {
-      top = px.y + s;
+    var w = this.div_.offsetWidth;
+    var h = this.div_.offsetHeight;
+
+    // Offset from `latLng` case
+    if (latLng) {
+      var s = TOOLTIP_OFFSET;
+      var px = this.getProjection().fromLatLngToDivPixel(latLng);
+      // Start with div up and left
+      top = px.y - s - h;
+      left = px.x - s - w;
+      // Change div side if necessary
+      if (top < 0) {
+        top = px.y + s;
+      }
+      if (left < 0) {
+        left = px.x + s;
+      }
+      // Center of the feature case
+      //
+      // See: https://stackoverflow.com/questions/3081021/how-to-get-the-center- \
+      //     of-a-polygon-in-google-maps-v3
+    } else {
+      var bounds = new google.maps.LatLngBounds();
+      feature.getGeometry().forEachLatLng(function (latLng) {
+        bounds.extend(latLng);
+      });
+      var _px = this.getProjection().fromLatLngToDivPixel(bounds.getCenter());
+      top = _px.y - h / 2;
+      left = _px.x - w / 2;
     }
-    if (left < 0) {
-      left = px.x + s;
-    }
+
     this.div_.style.top = top + "px";
     this.div_.style.left = left + "px";
 
@@ -686,6 +787,7 @@ var geochart_geojson = {};
     this.div_.style.visibility = "visible";
   };
 
+  // Undraw the tooltip
   Tooltip.prototype.undrawTooltip = function () {
     this.div_.style.visibility = "hidden";
   };
@@ -731,6 +833,8 @@ var geochart_geojson = {};
     legend_div_inner.style.height = LEGEND_HEIGHT + "px";
     legend_div_inner.style.padding = "0";
     legend_div_inner.style.margin = "0";
+    // Add the background CSS string to the style property
+    //
     // See: https://stackoverflow.com/a/16219600
     legend_div_inner.setAttribute("style", legend_div_inner.getAttribute("style") + "; " + this.geo_chart_.color_axis_.getGradientCssStr());
     legend_div.appendChild(legend_div_inner);
@@ -754,15 +858,19 @@ var geochart_geojson = {};
     this.indicator_span_ = indicator_span;
   };
 
+  // Get the div container of the legend
   Legend.prototype.getContainer = function () {
     return this.div_;
   };
 
+  // Draw the indicator at the right place above the legend
+  //
+  // The indicator will be an arrow.
   Legend.prototype.drawIndicator = function (feature) {
     var relative_value = 0;
 
     // Single value case
-    // In this case, put the indicator in the middle.
+    // In this case, put the indicator in the middle of the legend.
     if (this.geo_chart_.color_axis_.single_value) {
       relative_value = 0.5;
       // Normal case
@@ -770,8 +878,7 @@ var geochart_geojson = {};
       relative_value = this.geo_chart_.getRelativeValue_(feature.getProperty("data-value"));
     }
 
-    var width = LEGEND_WIDTH;
-    this.indicator_span_.style.left = relative_value * width + LEGEND_INDICATOR_LEFT_OFFSET + "px";
+    this.indicator_span_.style.left = relative_value * LEGEND_WIDTH + LEGEND_INDICATOR_LEFT_OFFSET + "px";
     this.indicator_span_.style.visibility = "visible";
   };
 

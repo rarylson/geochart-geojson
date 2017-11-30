@@ -1,7 +1,7 @@
 Changelog
 =========
 
-X.Y.Z
+1.4.0
 -----
 
 - It's possible to change the chart background color;
