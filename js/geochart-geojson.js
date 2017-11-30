@@ -370,13 +370,8 @@ GeoChart.prototype.draw = function(data, options={}) {
   // They handle the highlight and selection events.
 
   this.map_.data.addListener("mouseover", function(event) {
-    let highlighted_style = Object.assign(
-        {}, this.options_.featureStyleHighlighted,
-        {zIndex: HIGHLIGHTED_Z_INDEX});
-
     if (event.feature !== this.feature_selected_) {
-      this.map_.data.revertStyle();
-      this.map_.data.overrideStyle(event.feature, highlighted_style);
+      this.highlightFeature_(event.feature);
     }
     if (event.feature.getProperty("data-value") !== undefined) {
       if (this.legend_) {
@@ -406,6 +401,7 @@ GeoChart.prototype.draw = function(data, options={}) {
 
   this.map_.data.addListener("click", function(event) {
     this.map_.data.revertStyle();
+    // Select the feature
     if (event.feature !== this.feature_selected_) {
       if (event.feature.getProperty("data-is-data") !== undefined) {
         this.selectFeature_(event.feature);
@@ -418,6 +414,13 @@ GeoChart.prototype.draw = function(data, options={}) {
           this.tooltip_.undrawTooltip();
         }
       }
+    // Unselect the feature if its already selected
+    } else {
+      this.unselectFeature_();
+      if (this.tooltip_ && this.options_.tooltip.trigger === "selection") {
+        this.tooltip_.undrawTooltip();
+      }
+      this.highlightFeature_(event.feature);
     }
   }.bind(this));
 
@@ -429,6 +432,15 @@ GeoChart.prototype.draw = function(data, options={}) {
     }
   }.bind(this));
 
+};
+
+GeoChart.prototype.highlightFeature_ = function(feature) {
+  let highlighted_style = Object.assign(
+      {}, this.options_.featureStyleHighlighted,
+      {zIndex: HIGHLIGHTED_Z_INDEX});
+
+  this.map_.data.revertStyle();
+  this.map_.data.overrideStyle(feature, highlighted_style);
 };
 
 GeoChart.prototype.getRelativeValue_ = function(value) {
