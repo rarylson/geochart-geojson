@@ -1,11 +1,11 @@
 Geochart GeoJSON
 ================
 
-Create charts very similar to the [Google Charts geochart](https://developers.google.com/chart/interactive/docs/gallery/geochart), but with GeoJSON support.
+Create geocharts using custom maps (via GeoJSON).
 
-The Google Charts geochart is a very interesting project. However, it only generates predetermined maps.
+Geochart GeoJSON creates geocharts very similar to the [Google Charts geochart](https://developers.google.com/chart/interactive/docs/gallery/geochart). Google Charts geochart is a very interesting project. However, it only generates predetermined maps.
 
-This project makes possible to draw geocharts in custom maps with boundaries defined using GeoJSON.
+With Geochart GeoJSON, it's possible to draw geocharts using custom maps (with boundaries defined via GeoJSON).
 
 The above printscreens show two examples: a Geochart GeoJSON of the Rio de Janeiro state (Brazil), and a Geochart GeoJSON of the Rio de Janeiro city (RJ, Brazil).
 
@@ -20,7 +20,7 @@ This project uses [Google Charts](https://developers.google.com/chart/interactiv
 Usage
 -----
 
-Using Geochart GeoJSON is somehow similar to using [Google Charts geochart](https://developers.google.com/chart/interactive/docs/gallery/geochart). The bigger difference is that Google Charts geochart requires you to inform a region to draw the map, while Geochart GeoJSON requires you to set some Google Maps params and a GeoJSON to draw the map.
+Using Geochart GeoJSON is somehow similar to using [Google Charts geochart](https://developers.google.com/chart/interactive/docs/gallery/geochart). The biggest difference is that Google Charts geochart requires you to inform a region to draw the map, while Geochart GeoJSON requires you to set a GeoJSON to draw the map.
 
 The follow example shows an HTML page that draws a Geochart GeoJSON of the Rio de Janeiro state (in Brazil).
 
@@ -78,10 +78,3 @@ The follow example shows an HTML page that draws a Geochart GeoJSON of the Rio d
   </body>
 </html>
 ```
-
-Notes
------
-
-This project implements the Google Chart API and tries to implement an interface similar to the Google Charts geochart component.
-
-However, only a very few features are implemented.

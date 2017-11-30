@@ -1,7 +1,7 @@
 Changelog
 =========
 
-X.Y.Z
+1.5.0
 -----
 
 - It's possible to use multiple colors in the gradient.
