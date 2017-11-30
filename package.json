@@ -24,8 +24,9 @@
     "babel": "babel --presets env js/geochart-geojson.js -o build/geochart-geojson.js",
     "uglify": "uglifyjs build/geochart-geojson.js --compress --mangle --output build/geochart-geojson.min.js",
     "build": "npm run babel && npm run uglify",
+    "changelog_version": "sed -i \"s/^X.Y.Z$/$(node -p \"require('./package.json').version\")/\" CHANGELOG.md",
     "preversion": "npm run jshint",
-    "version": "npm run build && git add build/geochart-geojson.js build/geochart-geojson.min.js"
+    "version": "npm run changelog_version && git add CHANGELOG.md && npm run build && git add build/geochart-geojson.js build/geochart-geojson.min.js"
   },
   "devDependencies": {
     "babel-cli": "^6.26.0",

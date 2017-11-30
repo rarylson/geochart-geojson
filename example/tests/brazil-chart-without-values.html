@@ -5,7 +5,7 @@ vim: set ts=2 sw=2 et :
 <html>
   <head>
     <meta charset="utf-8">
-    <title>Geochart GeoJSON - Brazil example page using color names</title>
+    <title>Geochart GeoJSON - Brazil example page using regions without values</title>
 
     <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
     <!--
@@ -14,7 +14,7 @@ vim: set ts=2 sw=2 et :
     -->
     <!--<script src="https://maps.googleapis.com/maps/api/js?key=MAPS_API_KEY"></script>-->
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD-9tSrke72PouQMnMX-a7eZSW0jkFMBWY"></script>
-    <script type="text/javascript" src="../js/geochart-geojson.js"></script>
+    <script type="text/javascript" src="../../js/geochart-geojson.js"></script>
 
     <script type="text/javascript">
       google.charts.load("current");
@@ -25,20 +25,19 @@ vim: set ts=2 sw=2 et :
         // Create and populate a data table
         var data = new google.visualization.DataTable();
         data.addColumn("string", "State");
-        data.addColumn("number", "Value");
         data.addRows([
-          ["São Paulo", 336],
-          ["Rio de Janeiro", 78],
-          ["Paraná", 69],
-          ["Minas Gerais", 67],
-          ["Rio Grande do Sul", 55],
-          ["Santa Catarina", 50],
-          ["Ceará", 25],
-          ["Pernambuco", 22],
-          ["Distrito Federal", 20],
-          ["Bahia", 19],
-          ["Goiás", 15],
-          ["Espírito Santo", 11]
+          ["São Paulo"],
+          ["Rio de Janeiro"],
+          ["Paraná"],
+          ["Minas Gerais"],
+          ["Rio Grande do Sul"],
+          ["Santa Catarina"],
+          ["Ceará"],
+          ["Pernambuco"],
+          ["Distrito Federal"],
+          ["Bahia"],
+          ["Goiás"],
+          ["Espírito Santo"]
         ]);
 
         // Instantiate our Geochart GeoJSON object
@@ -50,11 +49,12 @@ vim: set ts=2 sw=2 et :
             center: {lat: -16, lng: -53},
             zoom: 4
           },
-          geoJson: "brazil.geojson",
+          geoJson: "../brazil.geojson",
           geoJsonOptions: {
             idPropertyName: "name"
           },
-          colorAxis: {colors: ["azure", "mediumblue"]}
+          defaultColor: "#99b2e5",
+          defaultStrokeColor: "#3366cc"
         };
 
         vis.draw(data, options);

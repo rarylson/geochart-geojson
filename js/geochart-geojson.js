@@ -7,7 +7,7 @@
  *
  * Contains the GeoChart class with its subcomponent classes.
  */
-var geochart_geojson = {};
+let geochart_geojson = {};
 
 (function(context) {
 
@@ -21,33 +21,36 @@ var geochart_geojson = {};
 // The selected (click) and highlighted (hover) features must have a zIndex
 // higher than the other features. The tooltip must have a zIndex higher than
 // the features and the selected and highlighted features.
-var SELECTED_Z_INDEX = 999;
-var HIGHLIGHTED_Z_INDEX = 1000;
-var TOOLTIP_Z_INDEX = 2000;
+const SELECTED_Z_INDEX = 999;
+const HIGHLIGHTED_Z_INDEX = 1000;
+const TOOLTIP_Z_INDEX = 2000;
 // Tooltip constants
-var TOOLTIP_STYLE = {
-    borderStyle: "solid",
-    borderWidth: "1px",
-    borderColor: "#cccccc",
-    backgroundColor: "#ffffff",
-    padding: "4px"
+const TOOLTIP_STYLE = {
+  borderStyle: "solid",
+  borderWidth: "1px",
+  borderColor: "#cccccc",
+  backgroundColor: "#ffffff",
+  padding: "4px"
 };
-var TOOLTIP_MARGIN = 2;
-var TOOLTIP_OFFSET = 12;
+const TOOLTIP_MARGIN = 2;
+const TOOLTIP_OFFSET = 12;
 // Legend constants
-var LEGEND_WIDTH = 250;
-var LEGEND_HEIGHT = 13;
-var LEGEND_NUM_PADDING_VERT = 2;
-var LEGEND_NUM_PADDING_HORIZ = 4;
-var LEGEND_INDICATOR_SIZE = 12;
-var LEGEND_INDICATOR_TOP_OFFSET = -8;
-var LEGEND_INDICATOR_LEFT_OFFSET = -6;
+const LEGEND_WIDTH = 250;
+const LEGEND_HEIGHT = 13;
+const LEGEND_NUM_PADDING_VERT = 2;
+const LEGEND_NUM_PADDING_HORIZ = 4;
+const LEGEND_INDICATOR_SIZE = 12;
+const LEGEND_INDICATOR_TOP_OFFSET = -8;
+const LEGEND_INDICATOR_LEFT_OFFSET = -6;
 
 
 // Auxiliary functions
 
+// Process a Google Chart `textStyle` option
+//
+// Converts a Google Chart `textStyle` option into a valid CSS style object.
 function processTextStyle_(textStyle) {
-  var style = {};
+  let style = {};
 
   style.color = textStyle.color;
   style.fontFamily = textStyle.fontName;
@@ -66,7 +69,7 @@ function processTextStyle_(textStyle) {
 //
 // The objects passed as params are kept intact.
 function deepMerge_(obj1, obj2) {
-  var obj = {};
+  let obj = {};
 
   obj = JSON.parse(JSON.stringify(obj1));
 
@@ -89,7 +92,7 @@ function deepMerge_(obj1, obj2) {
  * These charts are very similar to the Google Charts geochart, but with
  * GeoJSON support.
  *
- * Code based on many Google Charts and Google Maps API guides and references.
+ * Code based on Google Charts and Google Maps API guides and references.
  *
  * See:
  *
@@ -103,18 +106,21 @@ function deepMerge_(obj1, obj2) {
  *
  * - container: The HTML container for the chart.
  */
-var GeoChart = function(container) {
+let GeoChart = function(container) {
   this.container = container;
 
+  // The inner datatable
   this.data_ = null;
+  // The inner chart options
   this.options_ = null;
   // The inner Google Maps map object
   // This object will hold the GeoJSON map (in its overlay layer), the tooltip
-  // overlay and the color axis.
+  // overlay and the legend.
   // Optionally, it will also handle the underlying map layer (map, satellite
   // or simple map) and the map control (zoom, map drag). These features are
   // disabled by default.
   this.map_ = null;
+  // Inner objects (`ColorAxis`, `Tooltip` and `Legend`)
   this.color_axis_ = null;
   this.tooltip_ = null;
   this.legend_ = null;
@@ -123,19 +129,22 @@ var GeoChart = function(container) {
   this.max_ = 0;
   // Feature selected by the user
   this.feature_selected_ = null;
+  // Datatable has (or doesn't have) values
+  this.data_has_values_ = true;
 };
 
 // Default GeoChart options
 // TODO Document each option.
 GeoChart.prototype.DEFAULT_OPTIONS = {
+  backgroundColor: "#ffffff",
   colorAxis: {
     colors: ["#efe6dc", "#109618"],
     strokeColors: ["#cccccc", "#888888"],
   },
   datalessRegionColor: "#f5f5f5",
   datalessRegionStrokeColor: "#cccccc",
-  defaultColor: "#267114", // TODO Implement
-  defaultStrokeColor: "#666666", // TODO Implement
+  defaultColor: "#267114",
+  defaultStrokeColor: "#666666",
   displayMode: "regions", // TODO Implement
   featureStyle: {
     fillOpacity: 1,
@@ -174,18 +183,21 @@ GeoChart.prototype.DEFAULT_OPTIONS = {
       bold: false,
       italic: false
     },
-    trigger: "focus" // TODO Implement
+    // Interaction that causes the tooltip to be displayed. Valid options
+    // are: "focus", "none" and "selection".
+    trigger: "focus"
   }
 };
 
 GeoChart.prototype.getMapsOptions_ = function() {
-  var maps_options = this.options_.mapsOptions;
+  let maps_options = this.options_.mapsOptions;
+
+  maps_options.backgroundColor = this.options_.backgroundColor;
 
   if (this.options_.mapsBackground === "none") {
     maps_options.styles = [{
       "stylers": [{"visibility": "off"}]
     }];
-    maps_options.backgroundColor = "none";
   } else {
     throw new Error("Invalid `mapsBackground` option");
   }
@@ -217,13 +229,17 @@ GeoChart.prototype.draw = function(data, options={}) {
   this.options_ = deepMerge_(
       context.GeoChart.prototype.DEFAULT_OPTIONS, options);
 
-  // Check if datatable is valid
-  if (this.data_.getNumberOfColumns() !== 2) {
-    throw new Error("Incompatible datatable (must have two columns)");
+  // Check if datatable has values
+  if (this.data_.getNumberOfColumns() === 2) {
+    this.data_has_values_ = true;
+  } else if (this.data_.getNumberOfColumns() === 1) {
+    this.data_has_values_ = false;
+  } else {
+    throw new Error("Incompatible datatable (must have one or two columns)");
   }
 
   // Create the Google Maps object
-  var maps_options = this.getMapsOptions_();
+  let maps_options = this.getMapsOptions_();
   // TODO We could implement custom zooming when mapsBackground = "none" using
   // custom projections.
   // See: https://groups.google.com/forum/#!topic/google-maps-js-api-
@@ -234,31 +250,37 @@ GeoChart.prototype.draw = function(data, options={}) {
   this.map_.data.loadGeoJson(
       this.options_.geoJson, this.options_.geoJsonOptions,
       function(features) {
-        var min = Number.MAX_VALUE;
-        var max = -Number.MAX_VALUE;
+        let min = Number.MAX_VALUE;
+        let max = -Number.MAX_VALUE;
 
         // Process the datatable values
-        for (var row = 0; row < this.data_.getNumberOfRows(); row++) {
-          var id = this.data_.getValue(row, 0);
-          var value = this.data_.getValue(row, 1);
+        for (let row = 0; row < this.data_.getNumberOfRows(); row++) {
+          let id = this.data_.getValue(row, 0);
+          let value = 0;
 
-          // Keep track of min and max values
-          if (value < min) {
-            min = value;
+          if (this.data_has_values_) {
+            value = this.data_.getValue(row, 1);
+            // Keep track of min and max values
+            if (value < min) {
+              min = value;
+            }
+            if (value > max) {
+              max = value;
+            }
           }
-          if (value > max) {
-            max = value;
-          }
-          
+
           // Populate the feature "data-" properties
-          var feature = this.map_.data.getFeatureById(id);
+          let feature = this.map_.data.getFeatureById(id);
           if (feature) {
+            feature.setProperty("data-is-data", true);
             feature.setProperty("data-row", row);
             feature.setProperty("data-id", id);
-            feature.setProperty("data-label", this.data_.getColumnLabel(1));
-            feature.setProperty("data-value", value);
+            if (this.data_has_values_) {
+              feature.setProperty("data-label", this.data_.getColumnLabel(1));
+              feature.setProperty("data-value", value);
+            }
           } else {
-            console.warn('Feature "' + id + '" not found');
+            console.warn('Region "' + id + '" not found');
           }
         }
         this.min_ = min;
@@ -270,9 +292,11 @@ GeoChart.prototype.draw = function(data, options={}) {
         // Create the legend
         // Note that if the option `legend` is set to `"none"`, the legend
         // with be disabled.
-        // The legend will also be disabled if the datatable is empty.
-        if (this.options_.legend !== "none" && this.data_.getNumberOfRows()) {
-          var control_position = null;
+        // The legend will also be disabled if the datatable doesn't have
+        // values or if its is empty.
+        if (this.options_.legend !== "none" &&
+            this.data_has_values_ && this.data_.getNumberOfRows()) {
+          let control_position = null;
  
           this.legend_ = new Legend(this);
           control_position = google.maps.ControlPosition[
@@ -282,7 +306,11 @@ GeoChart.prototype.draw = function(data, options={}) {
         }
 
         // Create the tooltip
-        this.tooltip_ = new Tooltip(this);
+        // Note that if the option `tooltip.trigger` is set to `"none"`, the
+        // tooltip will be disabled.
+        if (this.options_.tooltip.trigger !== "none") {
+          this.tooltip_ = new Tooltip(this);
+        }
 
         // Trigger the ready event
         // See: https://developers.google.com/chart/interactive/docs/dev/
@@ -294,7 +322,7 @@ GeoChart.prototype.draw = function(data, options={}) {
   // Define the feature styles
   this.map_.data.setStyle(function(feature) {
     // Default style
-    var style = Object.assign(
+    let style = Object.assign(
         {}, {
           cursor: "default",
           fillColor: this.options_.datalessRegionColor,
@@ -304,18 +332,28 @@ GeoChart.prototype.draw = function(data, options={}) {
 
     // Feature with data style
     // Colorize the features with data (using the gradient colors)
-    if (feature.getProperty("data-value") !== undefined) {
-      var relative_value = this.getRelativeValue_(
-          feature.getProperty("data-value"));
+    if (feature.getProperty("data-is-data")) {
+      // Feature has value
+      if (feature.getProperty("data-value") !== undefined) {
+        let relative_value = this.getRelativeValue_(
+            feature.getProperty("data-value"));
 
-      var colors_to_fill = this.color_axis_.getRelativeColors(relative_value);
+        let colors_to_fill = this.color_axis_.getRelativeColors(
+            relative_value);
 
-      style = Object.assign(style, {
-        fillColor: this.color_axis_.toHex(colors_to_fill[0]),
-        strokeColor: this.color_axis_.toHex(colors_to_fill[1])
-      });
+        style = Object.assign(style, {
+          fillColor: this.color_axis_.toHex(colors_to_fill[0]),
+          strokeColor: this.color_axis_.toHex(colors_to_fill[1])
+        });
+      // Feature without value
+      } else {
+        style = Object.assign(style, {
+          fillColor: this.options_.defaultColor,
+          strokeColor: this.options_.defaultStrokeColor,
+        });
+      }
 
-      // Selected feature style
+      // Selected feature
       if (feature.getProperty("data-selected")) {
         style = Object.assign(
             style, this.options_.featureStyleHighlighted,
@@ -328,15 +366,12 @@ GeoChart.prototype.draw = function(data, options={}) {
   }.bind(this));
 
   // Mouse event handlers
+  //
+  // They handle the highlight and selection events.
 
   this.map_.data.addListener("mouseover", function(event) {
-    var highlighted_style = Object.assign(
-        {}, this.options_.featureStyleHighlighted,
-        {zIndex: HIGHLIGHTED_Z_INDEX});
-
     if (event.feature !== this.feature_selected_) {
-      this.map_.data.revertStyle();
-      this.map_.data.overrideStyle(event.feature, highlighted_style);
+      this.highlightFeature_(event.feature);
     }
     if (event.feature.getProperty("data-value") !== undefined) {
       if (this.legend_) {
@@ -349,41 +384,71 @@ GeoChart.prototype.draw = function(data, options={}) {
     if (event.feature !== this.feature_selected_) {
       this.map_.data.revertStyle();
     }
-    this.tooltip_.undrawTooltip();
+    if (this.tooltip_ && this.options_.tooltip.trigger === "focus") {
+      this.tooltip_.undrawTooltip();
+    }
     if (this.legend_) {
       this.legend_.undrawIndicator();
     }
   }.bind(this));
 
   this.map_.data.addListener("mousemove", function(event) {
-    if (event.feature.getProperty("data-value") !== undefined) {
+    if (this.tooltip_ && this.options_.tooltip.trigger === "focus" &&
+        event.feature.getProperty("data-is-data") !== undefined) {
       this.tooltip_.drawTooltip(event.feature, event.latLng);
     }
   }.bind(this));
 
   this.map_.data.addListener("click", function(event) {
     this.map_.data.revertStyle();
+    // Select the feature
     if (event.feature !== this.feature_selected_) {
-      if (event.feature.getProperty("data-value") !== undefined) {
+      if (event.feature.getProperty("data-is-data") !== undefined) {
         this.selectFeature_(event.feature);
+        if (this.tooltip_ && this.options_.tooltip.trigger === "selection") {
+          this.tooltip_.drawTooltip(event.feature);
+        }
       } else {
         this.unselectFeature_();
+        if (this.tooltip_ && this.options_.tooltip.trigger === "selection") {
+          this.tooltip_.undrawTooltip();
+        }
       }
+    // Unselect the feature if its already selected
+    } else {
+      this.unselectFeature_();
+      if (this.tooltip_ && this.options_.tooltip.trigger === "selection") {
+        this.tooltip_.undrawTooltip();
+      }
+      this.highlightFeature_(event.feature);
     }
   }.bind(this));
 
   this.map_.addListener("click", function(event) {
     this.map_.data.revertStyle();
     this.unselectFeature_();
+    if (this.tooltip_ && this.options_.tooltip.trigger === "selection") {
+      this.tooltip_.undrawTooltip();
+    }
   }.bind(this));
 
+};
+
+GeoChart.prototype.highlightFeature_ = function(feature) {
+  let highlighted_style = Object.assign(
+      {}, this.options_.featureStyleHighlighted,
+      {zIndex: HIGHLIGHTED_Z_INDEX});
+
+  this.map_.data.revertStyle();
+  this.map_.data.overrideStyle(feature, highlighted_style);
 };
 
 GeoChart.prototype.getRelativeValue_ = function(value) {
   return (value - this.min_) / (this.max_ - this.min_);
 };
 
-// Entry selected by the user
+// Get the selected data
+//
 // See: https://developers.google.com/chart/interactive/docs/reference
 //     #getselection
 GeoChart.prototype.getSelection = function() {
@@ -397,9 +462,13 @@ GeoChart.prototype.getSelection = function() {
   }
 };
 
+// Set the selected data
+//
+// See: https://developers.google.com/chart/interactive/docs/reference
+//     #setselection
 GeoChart.prototype.setSelection = function(selection) {
-  var id = "";
-  var feature = null;
+  let id = "";
+  let feature = null;
 
   // Implemented only for zero and single row selections
   if (! selection.length) {
@@ -429,8 +498,8 @@ context.GeoChart = GeoChart;
 
 // ColorAxis for GeoChart GeoJSON
 //
-// It's an abstraction that implements the color processment needed to color
-// the features and the legend.
+// It's an abstraction that implements the color processment needed to
+// colorizing the features and the legend.
 //
 // The color conversion functions are based on a `njvack`'s Github Gist.
 //
@@ -439,7 +508,7 @@ context.GeoChart = GeoChart;
 // Params:
 //
 // - geoChart: The GeoChart GeoJSON object where this color axis belong to.
-var ColorAxis = function(geoChart) {
+let ColorAxis = function(geoChart) {
   this.geo_chart_ = geoChart;
 
   this.single_value = false;
@@ -453,8 +522,8 @@ var ColorAxis = function(geoChart) {
 };
 
 ColorAxis.prototype.initCanvas_ = function() {
-  var canvas = null;
-  var context = null;
+  let canvas = null;
+  let context = null;
 
   canvas = document.createElement("canvas");
   canvas.height = 1;
@@ -462,6 +531,28 @@ ColorAxis.prototype.initCanvas_ = function() {
   context = canvas.getContext("2d");
 
   this.canvas_context_ = context;
+};
+
+ColorAxis.prototype.initColors_ = function() {
+  let color_axis_options_ = this.geo_chart_.options_.colorAxis;
+
+  this.colors_ = [
+    this.toRgbArray(color_axis_options_.colors[0]),
+    this.toRgbArray(color_axis_options_.colors[1])
+  ];
+  this.stroke_colors_ = [
+    this.toRgbArray(color_axis_options_.strokeColors[0]),
+    this.toRgbArray(color_axis_options_.strokeColors[1])
+  ];
+
+  // Single value case
+  // In this case, use a single color (the color of the max value).
+  if (this.geo_chart_.min_ === this.geo_chart_.max_) {
+    this.single_value = true;
+
+    this.colors_[0] = this.colors_[1];
+    this.stroke_colors_[0] = this.stroke_colors_[1];
+  }
 };
 
 // Convert number to hex string
@@ -483,7 +574,7 @@ ColorAxis.prototype.numToHexStr_ = function(num) {
 //
 // This function also can process RGB or RGBA arrays.
 ColorAxis.prototype.toRgbaArray = function(color) {
-  var a = [];
+  let a = [];
 
   // Already receive a RGB or RGBA array cases
   if (Array.isArray(color)) {
@@ -508,7 +599,7 @@ ColorAxis.prototype.toRgbaArray = function(color) {
 
 // Convert color to RGB array
 ColorAxis.prototype.toRgbArray = function(color) {
-  var a = this.toRgbaArray(color);
+  let a = this.toRgbaArray(color);
 
   return [a[0], a[1], a[2]];
 };
@@ -523,14 +614,14 @@ ColorAxis.prototype.toRgbArray = function(color) {
 // toRgba('#f00')  # 'rgba(255,0,0,1)'
 // toRgba('garbagey')  # 'rgba(0,0,0,0)'
 ColorAxis.prototype.toRgba = function(color) {
-  var a = this.toRgbaArray(color);
+  let a = this.toRgbaArray(color);
 
   return "rgba(" + a[0] + "," + a[1] + "," + a[2] + "," + (a[3]/255) + ")";
 };
 
 // Convert color to RGB string
 ColorAxis.prototype.toRgb = function(color) {
-  var a = this.toRgbaArray(color);
+  let a = this.toRgbaArray(color);
 
   return "rgb(" + a[0] + "," + a[1] + "," + a[2] + ")";
 };
@@ -545,45 +636,24 @@ ColorAxis.prototype.toRgb = function(color) {
 // toHex('garbagey')  # '#000000'
 // toHex(some_pattern)  # Depends on the pattern
 ColorAxis.prototype.toHex = function(color) {
-  var a = this.toRgbArray(color);
+  let a = this.toRgbArray(color);
 
   return "#" +
       this.numToHexStr_(a[0]) + this.numToHexStr_(a[1]) +
       this.numToHexStr_(a[2]);
 };
 
-ColorAxis.prototype.initColors_ = function() {
-  var color_axis_options_ = this.geo_chart_.options_.colorAxis;
-
-  this.colors_ = [
-    this.toRgbArray(color_axis_options_.colors[0]),
-    this.toRgbArray(color_axis_options_.colors[1])
-  ];
-  this.stroke_colors_ = [
-    this.toRgbArray(color_axis_options_.strokeColors[0]),
-    this.toRgbArray(color_axis_options_.strokeColors[1])
-  ];
-
-  // Single value case
-  // In this case, use a single color (the color of the max value).
-  if (this.geo_chart_.min_ === this.geo_chart_.max_) {
-    this.single_value = true;
-
-    this.colors_[0] = this.colors_[1];
-    this.stroke_colors_[0] = this.stroke_colors_[1];
-  }
-};
-
-// An array with two colors (fill and stroke)
+// Get the colors (fill and stroke) of a relative position between min/max
 //
-// The colors represent a relative position in the color axis gradients (fill
-// and stroke).
+// The colors will be an array with two colors (fill and stroke) and they
+// represent the colors of the relative position in the color axis gradients.
 ColorAxis.prototype.getRelativeColors = function(rel_pos) {
-  var rel_colors = [];
+  let rel_colors = [];
 
   function get_relative_color(colors, rel_pos) {
-    var rel_color = [];
-    for (var i = 0; i < 3; i++) {
+    let rel_color = [];
+
+    for (let i = 0; i < 3; i++) {
       rel_color[i] = Math.round(
           (colors[1][i] - colors[0][i]) * rel_pos + colors[0][i]);
     }
@@ -605,9 +675,10 @@ ColorAxis.prototype.getRelativeColors = function(rel_pos) {
 };
 
 // Generate the background gradient CSS string
+//
 // See: https://stackoverflow.com/a/16219600
 ColorAxis.prototype.getGradientCssStr = function() {
-  var gradient_string =
+  let gradient_string =
       "background-image: -o-linear-gradient(left, {c1}, {c2}); " +
       "background-image: -moz-linear-gradient(left, {c1}, {c2}); " +
       "background-image: -webkit-linear-gradient(left, {c1}, {c2}); " +
@@ -631,7 +702,7 @@ context.ColorAxis = ColorAxis;
 // Params:
 //
 // - geoChart: The GeoChart GeoJSON object where the tooltip will be placed.
-var Tooltip = function(geoChart) {
+let Tooltip = function(geoChart) {
   this.geo_chart_ = geoChart;
 
   this.div_ = null;
@@ -647,37 +718,44 @@ var Tooltip = function(geoChart) {
 Tooltip.prototype = new google.maps.OverlayView();
 
 Tooltip.prototype.onAdd = function() {
+  let div = null;
+  let id_span = null;
+  let label_span = null;
+  let value_span = null;
+
   // Create the main div
-  var div = document.createElement("div");
-  var div_style = {};
+  div = document.createElement("div");
+  let div_style = {};
   div_style = Object.assign(
       {}, {position: "absolute", visibility: "hidden"},
       TOOLTIP_STYLE,
       {zIndex: TOOLTIP_Z_INDEX});
   Object.assign(div.style, div_style);
 
-  var p_style = Object.assign(
+  let p_style = Object.assign(
       {}, {margin: TOOLTIP_MARGIN + "px"},
       processTextStyle_(this.geo_chart_.options_.tooltip.textStyle));
 
   // Create the first inner paragraph
-  var p1 = document.createElement("p");
+  let p1 = document.createElement("p");
   Object.assign(p1.style, p_style);
-  var id_span = document.createElement("span");
+  id_span = document.createElement("span");
   id_span.style.fontWeight = "bold";
   p1.appendChild(id_span);
   div.appendChild(p1);
 
   // Create the second inner paragraph
-  var p2 = document.createElement("p");
-  Object.assign(p2.style, p_style);
-  var label_span = document.createElement("span");
-  var value_span = document.createElement("span");
-  value_span.style.fontWeight = "bold";
-  p2.appendChild(label_span);
-  p2.appendChild(document.createTextNode(": "));
-  p2.appendChild(value_span);
-  div.appendChild(p2);
+  if (this.geo_chart_.data_has_values_) {
+    let p2 = document.createElement("p");
+    Object.assign(p2.style, p_style);
+    label_span = document.createElement("span");
+    value_span = document.createElement("span");
+    value_span.style.fontWeight = "bold";
+    p2.appendChild(label_span);
+    p2.appendChild(document.createTextNode(": "));
+    p2.appendChild(value_span);
+    div.appendChild(p2);
+  }
 
   this.div_ = div;
   this.id_span_ = id_span;
@@ -688,36 +766,60 @@ Tooltip.prototype.onAdd = function() {
 };
 
 Tooltip.prototype.draw = function() {
-  // Do not draw nothing at first
+  // Do not draw anything at first
   return;
 };
 
-Tooltip.prototype.drawTooltip = function(feature, latLng) {
+// Draw tooltip of a feature in the chart
+//
+// The tooltip will be drawn near the `latLng` point (with a small offset).
+// If `latLng` is null, however, it will be drawn at the center of the
+// feature.
+Tooltip.prototype.drawTooltip = function(feature, latLng=null) {
   // Update text
-  var id = feature.getId();
+  let id = feature.getId();
   if (id !== this.id_span_.innerText) {
     this.id_span_.innerText = id;
-    this.label_span_.innerText = feature.getProperty("data-label");
-    this.value_span_.innerText = feature.getProperty("data-value");
+    if (feature.getProperty("data-value") !== undefined) {
+      this.label_span_.innerText = feature.getProperty("data-label");
+      this.value_span_.innerText = feature.getProperty("data-value");
+    }
   }
 
   // Set positioning
-  var s = TOOLTIP_OFFSET;
-  var px = this.getProjection().fromLatLngToDivPixel(latLng);
-  var w = this.div_.offsetWidth;
-  var h = this.div_.offsetHeight;
-  var top = 0;
-  var left = 0;
-  // Start with div up and left
-  top = px.y - s - h;
-  left = px.x - s - w;
-  // Change div side if necessary
-  if (top < 0) {
-    top = px.y + s;
+  let top = 0;
+  let left = 0;
+  let w = this.div_.offsetWidth;
+  let h = this.div_.offsetHeight;
+
+  // Offset from `latLng` case
+  if (latLng) {
+    let s = TOOLTIP_OFFSET;
+    let px = this.getProjection().fromLatLngToDivPixel(latLng);
+    // Start with div up and left
+    top = px.y - s - h;
+    left = px.x - s - w;
+    // Change div side if necessary
+    if (top < 0) {
+      top = px.y + s;
+    }
+    if (left < 0) {
+      left = px.x + s;
+    }
+  // Center of the feature case
+  //
+  // See: https://stackoverflow.com/questions/3081021/how-to-get-the-center- \
+  //     of-a-polygon-in-google-maps-v3
+  } else {
+    let bounds = new google.maps.LatLngBounds();
+    feature.getGeometry().forEachLatLng(function(latLng) {
+      bounds.extend(latLng);
+    });
+    let px = this.getProjection().fromLatLngToDivPixel(bounds.getCenter());
+    top = px.y - h / 2;
+    left = px.x - w / 2;
   }
-  if (left < 0) {
-    left = px.x + s;
-  }
+
   this.div_.style.top = top + "px";
   this.div_.style.left = left + "px";
 
@@ -725,6 +827,7 @@ Tooltip.prototype.drawTooltip = function(feature, latLng) {
   this.div_.style.visibility = "visible";
 };
 
+// Undraw the tooltip
 Tooltip.prototype.undrawTooltip = function() {
   this.div_.style.visibility = "hidden";
 };
@@ -739,7 +842,7 @@ context.Tooltip = Tooltip;
 // Params:
 //
 // - geoChart: The GeoChart GeoJSON object where the legend will be placed.
-var Legend = function(geoChart) {
+let Legend = function(geoChart) {
   this.geo_chart_ = geoChart;
 
   this.div_ = null;
@@ -749,39 +852,41 @@ var Legend = function(geoChart) {
 };
 
 Legend.prototype.draw_ = function() {
-  var div = document.createElement("div");
+  let div = document.createElement("div");
 
-  var div_inner = document.createElement("div");
+  let div_inner = document.createElement("div");
   Object.assign(
       div_inner.style,
       {marginTop: - LEGEND_INDICATOR_TOP_OFFSET + "px"},
       processTextStyle_(this.geo_chart_.options_.legend.textStyle));
 
-  var min_div =  document.createElement("div");
+  let min_div =  document.createElement("div");
   min_div.style.padding =
       LEGEND_NUM_PADDING_VERT + "px " + LEGEND_NUM_PADDING_HORIZ + "px";
   min_div.style.display = "table-cell";
   min_div.innerText = this.geo_chart_.min_;
   div_inner.appendChild(min_div);
 
-  var legend_div = document.createElement("div");
+  let legend_div = document.createElement("div");
   legend_div.style.display = "table-cell";
   legend_div.style.verticalAlign = "middle";
   legend_div.style.position = "relative";
   legend_div.style.padding = "0";
   legend_div.style.margin = "0";
-  var legend_div_inner = document.createElement("div");
+  let legend_div_inner = document.createElement("div");
   legend_div_inner.style.width = LEGEND_WIDTH + "px";
   legend_div_inner.style.height = LEGEND_HEIGHT + "px";
   legend_div_inner.style.padding = "0";
   legend_div_inner.style.margin = "0";
+  // Add the background CSS string to the style property
+  //
   // See: https://stackoverflow.com/a/16219600
   legend_div_inner.setAttribute(
       "style",
       legend_div_inner.getAttribute("style") + "; " +
           this.geo_chart_.color_axis_.getGradientCssStr());
   legend_div.appendChild(legend_div_inner);
-  var indicator_span = document.createElement("span");
+  let indicator_span = document.createElement("span");
   indicator_span.style.fontSize = LEGEND_INDICATOR_SIZE + "px";
   indicator_span.style.top = LEGEND_INDICATOR_TOP_OFFSET + "px";
   indicator_span.style.position = "absolute";
@@ -790,7 +895,7 @@ Legend.prototype.draw_ = function() {
   legend_div.appendChild(indicator_span);
   div_inner.appendChild(legend_div);
 
-  var max_div =  document.createElement("div");
+  let max_div = document.createElement("div");
   max_div.style.padding =
       LEGEND_NUM_PADDING_VERT + "px " + LEGEND_NUM_PADDING_HORIZ + "px";
   max_div.style.display = "table-cell";
@@ -802,15 +907,19 @@ Legend.prototype.draw_ = function() {
   this.indicator_span_ = indicator_span;
 };
 
+// Get the div container of the legend
 Legend.prototype.getContainer = function() {
   return this.div_;
 };
 
+// Draw the indicator at the right place above the legend
+//
+// The indicator will be an arrow.
 Legend.prototype.drawIndicator = function(feature) {
-  var relative_value = 0;
+  let relative_value = 0;
 
   // Single value case
-  // In this case, put the indicator in the middle.
+  // In this case, put the indicator in the middle of the legend.
   if (this.geo_chart_.color_axis_.single_value) {
     relative_value = 0.5;
   // Normal case
@@ -819,9 +928,8 @@ Legend.prototype.drawIndicator = function(feature) {
         feature.getProperty("data-value"));
   }
 
-  var width = LEGEND_WIDTH;
   this.indicator_span_.style.left =
-      (relative_value * width + LEGEND_INDICATOR_LEFT_OFFSET) + "px";
+      (relative_value * LEGEND_WIDTH + LEGEND_INDICATOR_LEFT_OFFSET) + "px";
   this.indicator_span_.style.visibility = "visible";
 };
 
