@@ -536,22 +536,21 @@ ColorAxis.prototype.initCanvas_ = function() {
 ColorAxis.prototype.initColors_ = function() {
   let color_axis_options_ = this.geo_chart_.options_.colorAxis;
 
-  this.colors_ = [
-    this.toRgbArray(color_axis_options_.colors[0]),
-    this.toRgbArray(color_axis_options_.colors[1])
-  ];
-  this.stroke_colors_ = [
-    this.toRgbArray(color_axis_options_.strokeColors[0]),
-    this.toRgbArray(color_axis_options_.strokeColors[1])
-  ];
+  this.colors_ = color_axis_options_.colors.map(
+      this.toRgbArray.bind(this));
+  this.stroke_colors_ = color_axis_options_.strokeColors.map(
+      this.toRgbArray.bind(this));
 
   // Single value case
   // In this case, use a single color (the color of the max value).
   if (this.geo_chart_.min_ === this.geo_chart_.max_) {
-    this.single_value = true;
+    let last_color = this.colors_[this.colors_.length - 1];
+    let last_stroke_color = this.stroke_colors_[
+        this.stroke_colors_.length - 1];
 
-    this.colors_[0] = this.colors_[1];
-    this.stroke_colors_[0] = this.stroke_colors_[1];
+    this.single_value = true;
+    this.colors_ = [last_color, last_color];
+    this.stroke_colors_ = [last_stroke_color, last_stroke_color];
   }
 };
 
@@ -650,12 +649,42 @@ ColorAxis.prototype.toHex = function(color) {
 ColorAxis.prototype.getRelativeColors = function(rel_pos) {
   let rel_colors = [];
 
-  function get_relative_color(colors, rel_pos) {
+  function get_relative_color_two_colors(colors, rel_pos) {
     let rel_color = [];
 
     for (let i = 0; i < 3; i++) {
       rel_color[i] = Math.round(
           (colors[1][i] - colors[0][i]) * rel_pos + colors[0][i]);
+    }
+
+    return rel_color;
+  }
+
+  function get_relative_color(colors, rel_pos) {
+    let rel_color = [];
+
+    // Two colors case
+    if (colors.length === 2) {
+      rel_color = get_relative_color_two_colors(colors, rel_pos);
+    // Many colors case
+    } else {
+      let dist_between_colors = 1 / (colors.length - 1);
+      let color_pos = 0;
+      let new_rel_pos = 0;
+      let new_colors = [];
+
+      // End of color axis case
+      if (rel_pos === 1) {
+        color_pos = colors.length - 2;
+        new_rel_pos = 1;
+      // Normal case
+      } else {
+        color_pos = Math.floor(rel_pos / dist_between_colors);
+        new_rel_pos = (rel_pos % dist_between_colors) / dist_between_colors;
+      }
+      new_colors = [colors[color_pos], colors[color_pos + 1]];
+
+      rel_color = get_relative_color_two_colors(new_colors, new_rel_pos);
     }
 
     return rel_color;
@@ -679,15 +708,15 @@ ColorAxis.prototype.getRelativeColors = function(rel_pos) {
 // See: https://stackoverflow.com/a/16219600
 ColorAxis.prototype.getGradientCssStr = function() {
   let gradient_string =
-      "background-image: -o-linear-gradient(left, {c1}, {c2}); " +
-      "background-image: -moz-linear-gradient(left, {c1}, {c2}); " +
-      "background-image: -webkit-linear-gradient(left, {c1}, {c2}); " +
-      "background-image: -ms-linear-gradient(left, {c1}, {c2}); " +
-      "background: linear-gradient(left, {c1}, {c2})";
+      "background-image: -o-linear-gradient(left, {colors}); " +
+      "background-image: -moz-linear-gradient(left, {colors}); " +
+      "background-image: -webkit-linear-gradient(left, {colors}); " +
+      "background-image: -ms-linear-gradient(left, {colors}); " +
+      "background: linear-gradient(left, {colors})";
 
-  gradient_string = gradient_string.
-      replace(/\{c1\}/g, this.toRgb(this.colors_[0])).
-      replace(/\{c2\}/g, this.toRgb(this.colors_[1]));
+  let colors_string = this.colors_.map(this.toRgb.bind(this)).join(", ");
+
+  gradient_string = gradient_string.replace(/\{colors\}/g, colors_string);
 
   return gradient_string;
 };
