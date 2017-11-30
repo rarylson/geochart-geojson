@@ -1,6 +1,11 @@
 Changelog
 =========
 
+X.Y.Z
+-----
+
+- It's possible to use multiple colors in the gradient.
+
 1.4.0
 -----
 
